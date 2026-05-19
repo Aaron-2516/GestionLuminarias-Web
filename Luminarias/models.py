@@ -1,36 +1,42 @@
 from django.db import models
 
 
+class Rol(models.Model):
+    id_rol = models.IntegerField(primary_key=True)
+    roles = models.CharField(max_length=50)
+
+    class Meta:
+        db_table = "rol"
+
+    def __str__(self):
+        return self.roles
+
+
 class Usuario(models.Model):
-    carnet = models.CharField(
-        max_length=12,
-        primary_key=True
+    id_usuario = models.CharField(max_length=12, primary_key=True)
+    rol = models.ForeignKey(
+        Rol,
+        on_delete=models.RESTRICT,
+        null=True,
+        blank=True,
+        db_column="id_rol",
+        related_name="usuarios"
     )
-    correo = models.CharField(
-        max_length=50
-    )
-    contrasena = models.CharField(
-        max_length=100
-    )
-    nombre_usuario = models.CharField(
-        max_length=50
-    )
+    contrasena = models.CharField(max_length=100)
+    nombre_usuario = models.CharField(max_length=50)
+    apellido_usuario = models.CharField(max_length=50)
+    telefono = models.IntegerField()
 
     class Meta:
         db_table = "usuario"
 
     def __str__(self):
-        return self.nombre_usuario
+        return f"{self.nombre_usuario} {self.apellido_usuario}"
 
 
 class Municipio(models.Model):
-    id_municipio = models.CharField(
-        max_length=25,
-        primary_key=True
-    )
-    nombre_municipio = models.CharField(
-        max_length=50
-    )
+    id_municipio = models.CharField(max_length=25, primary_key=True)
+    nombre_municipio = models.CharField(max_length=50)
 
     class Meta:
         db_table = "municipio"
@@ -40,17 +46,10 @@ class Municipio(models.Model):
 
 
 class Red(models.Model):
-    id = models.CharField(
-        max_length=10,
-        primary_key=True
-    )
-    nombre_red = models.CharField(
-        max_length=50
-    )
-    voltaje = models.DecimalField(
-        max_digits=4,
-        decimal_places=2
-    )
+    id_red = models.CharField(max_length=10, primary_key=True)
+    nombre_red = models.CharField(max_length=50)
+    voltaje = models.DecimalField(max_digits=10, decimal_places=2)
+    consumo_esperado = models.DecimalField(max_digits=10, decimal_places=2)
 
     class Meta:
         db_table = "red"
@@ -59,10 +58,74 @@ class Red(models.Model):
         return self.nombre_red
 
 
+class Luminaria(models.Model):
+    id_luminaria = models.CharField(max_length=25, primary_key=True)
+    red = models.ForeignKey(
+        Red,
+        on_delete=models.RESTRICT,
+        null=True,
+        blank=True,
+        db_column="id_red",
+        related_name="luminarias"
+    )
+    potencia = models.DecimalField(max_digits=10, decimal_places=2)
+    estado = models.BooleanField()
+    tipo = models.CharField(max_length=50)
+    fecha_instalacion = models.DateField()
+
+    class Meta:
+        db_table = "luminaria"
+
+    def __str__(self):
+        return self.id_luminaria
+
+
+class RegistrarLectura(models.Model):
+    id_lectura = models.CharField(max_length=25, primary_key=True)
+    red = models.ForeignKey(
+        Red,
+        on_delete=models.RESTRICT,
+        null=True,
+        blank=True,
+        db_column="id_red",
+        related_name="lecturas"
+    )
+    fecha_lectura = models.DateField()
+    consumo_actual = models.DecimalField(max_digits=10, decimal_places=2)
+    variacion_consumo = models.DecimalField(max_digits=10, decimal_places=2)
+
+    class Meta:
+        db_table = "registrarlectura"
+
+    def __str__(self):
+        return self.id_lectura
+
+
+class Reporte(models.Model):
+    id_reporte = models.CharField(max_length=15, primary_key=True)
+    fecha_generacion = models.DateField()
+    tipo_reporte = models.IntegerField()
+    descripcion = models.CharField(max_length=500)
+    formato = models.CharField(max_length=50)
+    fecha_fin = models.DateField()
+    fecha_inicio = models.DateField()
+
+    class Meta:
+        db_table = "reporte"
+
+    def __str__(self):
+        return self.id_reporte
+
+
 class Zona(models.Model):
-    codigo_zona = models.CharField(
-        max_length=25,
-        primary_key=True
+    id_zona = models.CharField(max_length=25, primary_key=True)
+    red = models.ForeignKey(
+        Red,
+        on_delete=models.RESTRICT,
+        null=True,
+        blank=True,
+        db_column="id_red",
+        related_name="zonas"
     )
     municipio = models.ForeignKey(
         Municipio,
@@ -72,9 +135,8 @@ class Zona(models.Model):
         db_column="id_municipio",
         related_name="zonas"
     )
-    nombre_zona = models.CharField(
-        max_length=50
-    )
+    nombre_zona = models.CharField(max_length=50)
+    tipo_zona = models.CharField(max_length=100)
 
     class Meta:
         db_table = "zona"
@@ -83,116 +145,37 @@ class Zona(models.Model):
         return self.nombre_zona
 
 
-class Reporte(models.Model):
-    id_reporte = models.CharField(
-        max_length=15,
-        primary_key=True
+class Crea(models.Model):
+    usuario = models.ForeignKey(
+        Usuario,
+        on_delete=models.RESTRICT,
+        db_column="id_usuario"
+    )
+    lectura = models.ForeignKey(
+        RegistrarLectura,
+        on_delete=models.RESTRICT,
+        db_column="id_lectura"
+    )
+
+    pk = models.CompositePrimaryKey("usuario_id", "lectura_id")
+
+    class Meta:
+        db_table = "crea"
+
+
+class Realiza(models.Model):
+    reporte = models.ForeignKey(
+        Reporte,
+        on_delete=models.RESTRICT,
+        db_column="id_reporte"
     )
     usuario = models.ForeignKey(
         Usuario,
         on_delete=models.RESTRICT,
-        null=True,
-        blank=True,
-        db_column="carnet",
-        related_name="reportes"
+        db_column="id_usuario"
     )
-    fecha_generacion = models.DateField()
-    tipo_reporte = models.CharField(
-        max_length=50
-    )
-    descripcion = models.CharField(
-        max_length=500
-    )
+
+    pk = models.CompositePrimaryKey("reporte_id", "usuario_id")
 
     class Meta:
-        db_table = "reporte"
-
-    def __str__(self):
-        return f"{self.id_reporte} - {self.tipo_reporte}"
-
-
-class ConsumoEnergia(models.Model):
-    codigo_consumo = models.CharField(
-        max_length=25,
-        primary_key=True
-    )
-    usuario = models.ForeignKey(
-        Usuario,
-        on_delete=models.RESTRICT,
-        null=True,
-        blank=True,
-        db_column="carnet",
-        related_name="consumos"
-    )
-    red = models.ForeignKey(
-        Red,
-        on_delete=models.RESTRICT,
-        null=True,
-        blank=True,
-        db_column="id",
-        related_name="consumos"
-    )
-    fecha = models.DateField()
-    consumo = models.DecimalField(
-        max_digits=4,
-        decimal_places=2
-    )
-
-    class Meta:
-        db_table = "consumo_energia"
-
-    def __str__(self):
-        return self.codigo_consumo
-
-
-class Luminaria(models.Model):
-    codigo = models.CharField(
-        max_length=25,
-        primary_key=True
-    )
-    red = models.ForeignKey(
-        Red,
-        on_delete=models.RESTRICT,
-        null=True,
-        blank=True,
-        db_column="id",
-        related_name="luminarias"
-    )
-    potencia = models.DecimalField(
-        max_digits=4,
-        decimal_places=2
-    )
-    estado = models.BooleanField()
-    tipo = models.CharField(
-        max_length=1024
-    )
-
-    class Meta:
-        db_table = "luminaria"
-
-    def __str__(self):
-        return self.codigo
-
-
-class Contiene(models.Model):
-    pk = models.CompositePrimaryKey("red_id", "zona_id")
-
-    red = models.ForeignKey(
-        Red,
-        on_delete=models.RESTRICT,
-        db_column="id",
-        related_name="zonas_asociadas"
-    )
-
-    zona = models.ForeignKey(
-        Zona,
-        on_delete=models.RESTRICT,
-        db_column="codigo_zona",
-        related_name="redes_asociadas"
-    )
-
-    class Meta:
-        db_table = "contiene"
-
-    def __str__(self):
-        return f"{self.red} - {self.zona}" 
+        db_table = "realiza"
