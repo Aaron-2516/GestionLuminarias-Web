@@ -1,0 +1,53 @@
+{% extends "luminarias/base_supervisor.html" %}
+{% load static %}
+
+{% block title %}Dashboard Supervisor{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'app/css/base_supervisor.css' %}">
+<link rel="stylesheet" href="{% static 'app/css/dashboard_supervisor.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="header">
+    <h2>Dashboard Supervisor</h2>
+    <div class="status">Online: 84% | Alerts: 2</div>
+</div>
+
+<div class="cards">
+    <article class="card">
+        <h3>Total Luminarias</h3>
+        <p>128</p>
+    </article>
+    <article class="card">
+        <h3>Active Zones</h3>
+        <p>12</p>
+    </article>
+    <article class="card">
+        <h3>Energy Saved</h3>
+        <p>24%</p>
+    </article>
+    <article class="card">
+        <h3>Pending Alerts</h3>
+        <p>2</p>
+    </article>
+</div>
+
+<section class="section">
+    <h3>Recent Activity</h3>
+    <ul class="section-list">
+        <li>
+            <strong>Zone 3</strong>
+            <span>Night schedule updated</span>
+        </li>
+        <li>
+            <strong>Device A12</strong>
+            <span>Firmware synced successfully</span>
+        </li>
+        <li>
+            <strong>Report</strong>
+            <span>Monthly energy summary ready</span>
+        </li>
+    </ul>
+</section>
+{% endblock %}

@@ -178,4 +178,4 @@ class Realiza(models.Model):
     pk = models.CompositePrimaryKey("reporte_id", "usuario_id")
 
     class Meta:
-        db_table = "realiza"
+        db_table = "realiza"    
