@@ -9,45 +9,142 @@
 {% endblock %}
 
 {% block content %}
-<div class="header">
-    <h2>Dashboard Supervisor</h2>
-    <div class="status">Online: 84% | Alerts: 2</div>
+<div class="top-actions">
+
+    <div class="action-btn primary">
+        Nueva Luminaria
+    </div>
+
+    <div class="action-btn secondary">
+        Nueva Zona
+    </div>
+
+    <div class="action-btn secondary">
+        Nueva Red
+    </div>
+
 </div>
+
+<!-- HERO -->
+
+<div class="hero">
+
+    <div>
+
+        <h1>
+            Alcaldía de {{ alcaldia_nombre }}
+        </h1>
+
+        <p>
+            Sistema inteligente de monitoreo y control de luminarias públicas.
+        </p>
+
+    </div>
+
+</div>
+
+<!-- CARDS -->
 
 <div class="cards">
-    <article class="card">
-        <h3>Total Luminarias</h3>
-        <p>128</p>
-    </article>
-    <article class="card">
-        <h3>Active Zones</h3>
-        <p>12</p>
-    </article>
-    <article class="card">
-        <h3>Energy Saved</h3>
-        <p>24%</p>
-    </article>
-    <article class="card">
-        <h3>Pending Alerts</h3>
-        <p>2</p>
-    </article>
+
+    <div class="card">
+
+        <div class="card-title">
+            Total Luminarias
+        </div>
+
+        <div class="card-number">
+            {{ total_luminarias }}
+        </div>
+
+    </div>
+
+    <div class="card">
+
+        <div class="card-title">
+            Luminarias Activas
+        </div>
+
+        <div class="card-number success">
+            {{ luminarias_activas }}
+        </div>
+
+    </div>
+
+    <div class="card">
+
+        <div class="card-title">
+            En Mantenimiento
+        </div>
+
+        <div class="card-number warning">
+            {{ luminarias_mantenimiento }}
+        </div>
+
+    </div>
+
+    <div class="card">
+
+        <div class="card-title">
+            Con Fallas
+        </div>
+
+        <div class="card-number danger">
+            {{ luminarias_falla }}
+        </div>
+
+    </div>
+
 </div>
 
-<section class="section">
-    <h3>Recent Activity</h3>
-    <ul class="section-list">
-        <li>
-            <strong>Zone 3</strong>
-            <span>Night schedule updated</span>
-        </li>
-        <li>
-            <strong>Device A12</strong>
-            <span>Firmware synced successfully</span>
-        </li>
-        <li>
-            <strong>Report</strong>
-            <span>Monthly energy summary ready</span>
-        </li>
-    </ul>
-</section>
+<!-- TABLA -->
+
+<div class="table-box">
+
+    <div class="table-title">
+        Consumo por Red
+    </div>
+
+    <table>
+
+        <thead>
+
+            <tr>
+
+                <th>Red</th>
+
+                <th>Consumo</th>
+
+                <th>Estado</th>
+
+            </tr>
+
+        </thead>
+
+        <tbody>
+
+            <tr>
+                <td>Red Norte</td>
+                <td>1250 kWh</td>
+                <td class="success">Activa</td>
+            </tr>
+
+            <tr>
+                <td>Red Sur</td>
+                <td>1650 kWh</td>
+                <td class="success">Activa</td>
+            </tr>
+
+            <tr>
+                <td>Red Este</td>
+                <td>1587 kWh</td>
+                <td class="warning">Mantenimiento</td>
+            </tr>
+
+        </tbody>
+
+    </table>
+
+</div>
+
 {% endblock %}

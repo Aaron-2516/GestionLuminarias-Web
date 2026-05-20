@@ -12,24 +12,113 @@
 </head>
 <body>
     <div class="layout">
-        <aside class="sidebar">
-            <h1>LumSys</h1>
-            <span>Sistema de alumbrado</span>
-            
-            <nav>
-                <ul class="nav-links">
-                    <li><a href="/dashboard_supervisor/">Inicio</a></li>
-                    <li><a href="/agregar_tecnicos/">Agregar Técnicos</a></li>
-                </ul>
-            </nav>
-        </aside>
 
-        <main class="main">
+    <!-- SIDEBAR -->
+
+    <aside class="sidebar">
+
+        <div class="sidebar-top">
+
+            <!-- LOGO -->
+
+            <div class="logo">
+
+                <h1>
+                    LumSys
+                </h1>
+
+                <p>
+                    Sistema de Alumbrado
+                </p>
+
+            </div>
+
+        
+
+            <nav class="menu">
+
+                <a href="{% url 'dashboard_supervisor' %}">
+                    <span>Inicio</span>
+                </a>
+                <a href="{% url 'agregar_tecnicos' %}">
+                    <span>Agregar Tecnicos</span>
+                </a>
+            </nav>
+
+        </div>
+
+        <!-- SIDEBAR FOOTER -->
+
+        <div class="sidebar-footer">
+
+            <div class="user-box">
+
+                <div class="avatar">
+                    T
+                </div>
+
+                <div class="user-info">
+
+                    <div class="user-name">
+                        Técnico
+                    </div>
+
+                    <div class="user-role">
+                        Operador
+                    </div>
+
+                </div>
+
+            </div>
+
+            <button class="btn btn-danger">
+
+                Cerrar Sesión
+
+            </button>
+
+        </div>
+
+    </aside>
+
+    <!-- MAIN -->
+
+    <main class="main">
+
+        <!-- TOPBAR -->
+
+        <header class="topbar">
+
+            <div class="topbar-title">
+
+                {% block topbar_title %}
+                    Sistema de Alumbrado Público
+                {% endblock %}
+
+            </div>
+
+            <div class="topbar-actions">
+
+                {% block topbar_actions %}
+                {% endblock %}
+
+            </div>
+
+        </header>
+
+        <!-- CONTENT -->
+
+        <section class="content">
+
             {% block content %}
             {% endblock %}
-        </main>
-    </div>
 
+        </section>
+
+    </main>
+
+</div>
+    
     <script src="{% static 'app/js/base.js' %}"></script>
     {% block extra_js %}{% endblock %}
 </body>

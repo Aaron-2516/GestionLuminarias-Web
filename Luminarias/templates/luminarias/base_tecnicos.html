@@ -1,6 +1,6 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,31 +9,90 @@
     <link rel="stylesheet" href="{% static 'app/css/base.css' %}">
 
     {% block extra_css %}{% endblock %}
+    {% block extra_styles %}{% endblock %}
 </head>
 <body>
     <div class="layout">
+
         <aside class="sidebar">
-            <h1>LumSys</h1>
-            <span>Sistema de alumbrado</span>
-            
-            <nav>
-                <ul class="nav-links">
-                    <li><a href="#">Inicio</a></li>
-                    <li><a href="#">Redes</a></li>
-                    <li><a href="#">Zonas</a></li>
-                    <li><a href="#">Luminarias</a></li>
-                </ul>
-            </nav>
-            <sidebar-footer class="sidebar-footer">
-                <span>Tecnico</span>
-                <button type="button" class="logout">Cerrar Sesión</button>
-            </sidebar-footer>
+
+            <div class="sidebar-top">
+
+                <div class="logo">
+                    <h1>LumSys</h1>
+                    <p>Sistema de Alumbrado</p>
+                </div>
+
+                <nav class="menu">
+
+    <a href="{% url 'dashboard_tecnico' %}">
+        <span>Inicio</span>
+    </a>
+
+    <a href="{% url 'agregar_redes' %}">
+        <span>Redes</span>
+    </a>
+
+    <a href="#">
+        <span>Zonas</span>
+    </a>
+
+    <a href="#">
+        <span>Luminarias</span>
+    </a>
+
+</nav>
+
+            </div>
+
+            <div class="sidebar-footer">
+
+                <div class="user-box">
+
+                    <div class="avatar">
+                        T
+                    </div>
+
+                    <div class="user-info">
+                        <div class="user-name">Técnico</div>
+                        <div class="user-role">Operador</div>
+                    </div>
+
+                </div>
+
+                <button class="btn btn-danger">
+                    Cerrar Sesión
+                    <a href="{% url 'agregar_redes' %}">
+                    <span>Redes</span>
+                </a>
+                </button>
+
+            </div>
+
         </aside>
 
         <main class="main">
-            {% block content %}
-            {% endblock %}
+
+            <header class="topbar">
+
+                <div class="topbar-title">
+                    {% block topbar_title %}
+                        Sistema de Alumbrado Público
+                    {% endblock %}
+                </div>
+
+                <div class="topbar-actions">
+                    {% block topbar_actions %}{% endblock %}
+                </div>
+
+            </header>
+
+            <section class="content">
+                {% block content %}{% endblock %}
+            </section>
+
         </main>
+
     </div>
 
     <script src="{% static 'app/js/base.js' %}"></script>
