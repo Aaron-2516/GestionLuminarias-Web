@@ -1,0 +1,63 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}LumSys{% endblock %}</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'app/css/base.css' %}">
+
+    {% block extra_css %}{% endblock %}
+    {% block extra_styles %}{% endblock %}
+</head>
+<body>
+    <div class="layout">
+        <aside class="sidebar">
+            <div class="sidebar-top">
+                <div class="logo">
+                    <h1>LumSys</h1>
+                    <p>Sistema de Alumbrado</p>
+                </div>
+
+                <nav class="menu">
+                    {% block sidebar_menu %}{% endblock %}
+                </nav>
+            </div>
+
+            <div class="sidebar-footer">
+                <div class="user-box">
+                    <div class="avatar">{% block user_initial %}U{% endblock %}</div>
+                    <div class="user-info">
+                        <div class="user-name">{% block user_name %}Usuario{% endblock %}</div>
+                        <div class="user-role">{% block user_role %}Operador{% endblock %}</div>
+                    </div>
+                </div>
+
+                <button class="btn btn-danger" type="button">Cerrar Sesi&oacute;n</button>
+            </div>
+        </aside>
+
+        <main class="main">
+            <header class="topbar">
+                <div class="topbar-title">
+                    {% block topbar_title %}Sistema de Alumbrado P&uacute;blico{% endblock %}
+                </div>
+
+                <div class="topbar-actions">
+                    {% block topbar_actions %}{% endblock %}
+                </div>
+            </header>
+
+            <section class="content">
+                {% block content %}{% endblock %}
+            </section>
+        </main>
+    </div>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

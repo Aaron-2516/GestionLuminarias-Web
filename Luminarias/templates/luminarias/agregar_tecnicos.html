@@ -1,90 +1,78 @@
 {% extends "luminarias/base_supervisor.html" %}
 {% load static %}
 
-{% block title %}Agregar Técnicos{% endblock %}
+{% block title %}Agregar T&eacute;cnicos{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'app/css/base_supervisor.css' %}">
-<link rel="stylesheet" href="{% static 'app/css/agregar_tecnicos.css' %}">
+<link rel="stylesheet" href="{% static 'app/css/listado.css' %}">
 {% endblock %}
 
 {% block content %}
 <div class="header">
-    <h2>Agregar Técnicos</h2>
+    <h2>Agregar T&eacute;cnicos</h2>
 </div>
 
 <div class="cards">
     <article class="card">
-        <h3>Total Técnicos</h3>
+        <h3>Total T&eacute;cnicos</h3>
         <p>128</p>
     </article>
-
     <article class="card">
         <h3>Con zonas asignadas</h3>
         <p>120</p>
     </article>
-
     <article class="card">
         <h3>Sin zonas asignadas</h3>
         <p>6</p>
     </article>
-
     <article class="card">
-        <h3>Técnicos Inactivos</h3>
+        <h3>T&eacute;cnicos Inactivos</h3>
         <p>2</p>
     </article>
 </div>
 
-<br>
+<section class="filters">
+    <form action="/buscar" method="GET">
+        <label for="barra-busqueda">Buscar:</label>
+        <input
+            type="search"
+            id="barra-busqueda"
+            name="q"
+            placeholder="Nombre o C&oacute;digo"
+        >
+    </form>
 
-<div>
-    <section class="filters">
-        <form action="/buscar" method="GET">
-            <label for="barra-busqueda">Buscar:</label>
-            <input
-                type="search"
-                id="barra-busqueda"
-                name="q"
-                placeholder="Nombre o Código"
-            >
-        </form>
+    <select name="zonas" id="zona-select">
+        <option value="">-- Seleccione una zona --</option>
+        <option value="zona1">Zona 1</option>
+        <option value="zona2">Zona 2</option>
+        <option value="zona3">Zona 3</option>
+    </select>
 
-        <select name="zonas" id="zona-select">
-            <option value="">-- Seleccione una zona --</option>
-            <option value="zona1">Zona 1</option>
-            <option value="zona2">Zona 2</option>
-            <option value="zona3">Zona 3</option>
-        </select>
+    <select name="estados" id="estado-select">
+        <option value="">-- Seleccione un estado --</option>
+        <option value="activo">Activo</option>
+        <option value="inactivo">Inactivo</option>
+    </select>
 
-        <select name="estados" id="estado-select">
-            <option value="">-- Seleccione un estado --</option>
-            <option value="activo">Activo</option>
-            <option value="inactivo">Inactivo</option>
-        </select>
+    <button class="submit" type="button">Buscar</button>
+    <button class="reset" type="button">Limpiar</button>
+</section>
 
-        <button class="submit" type="button">Buscar</button>
-        <button class="reset" type="button">Limpiar</button>
-    </section>
-</div>
-
-<h3>Técnicos Registrados</h3>
+<h3>T&eacute;cnicos Registrados</h3>
 
 <table class="table-tecnicos">
     <tr>
-        <th>Código</th>
+        <th>C&oacute;digo</th>
         <th>Nombre</th>
         <th>Credenciales</th>
         <th>Zona Asignada</th>
         <th>Turno</th>
         <th>Acciones</th>
     </tr>
-
-    <tr onclick="mostrarDetalle(
-        'Ana López',
-        'Código: ana2026, Credenciales: ana2026@gob.sv, Zona Asignada: Zona 2, Turno: Nocturno'
-    )">
+    <tr onclick="mostrarDetalle('Ana L&oacute;pez', 'C&oacute;digo: ana2026, Credenciales: ana2026@gob.sv, Zona Asignada: Zona 2, Turno: Nocturno')">
         <td>ana2026</td>
-        <td>Ana López</td>
+        <td>Ana L&oacute;pez</td>
         <td>ana2026@gob.sv</td>
         <td>Zona 2</td>
         <td>Nocturno</td>
@@ -94,13 +82,9 @@
             <button type="button">Estado</button>
         </td>
     </tr>
-
-    <tr onclick="mostrarDetalle(
-        'Carlos Rodríguez',
-        'Código: carlos3045, Credenciales: carlos3045@gob.sv, Zona Asignada: Zona 1, Turno: Matutino'
-    )">
+    <tr onclick="mostrarDetalle('Carlos Rodr&iacute;guez', 'C&oacute;digo: carlos3045, Credenciales: carlos3045@gob.sv, Zona Asignada: Zona 1, Turno: Matutino')">
         <td>carlos3045</td>
-        <td>Carlos Rodríguez</td>
+        <td>Carlos Rodr&iacute;guez</td>
         <td>carlos3045@gob.sv</td>
         <td>Zona 1</td>
         <td>Matutino</td>
@@ -112,12 +96,9 @@
     </tr>
 </table>
 
-<div id="panelDetalle" class="panel-detalle">
-    <h3 id="detalleTitulo"></h3>
-    <p id="detalleTexto"></p>
-</div>
+{% include "luminarias/partials/panel_detalle.html" %}
 {% endblock content %}
 
 {% block extra_js %}
-<script src="{% static 'app/js/agregar_tecnicos.js' %}"></script>
+<script src="{% static 'app/js/detalle_panel.js' %}"></script>
 {% endblock extra_js %}

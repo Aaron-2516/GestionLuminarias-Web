@@ -1,13 +1,13 @@
-{% extends "luminarias/base_tecnicos.html" %}
+{% extends "luminarias/base_supervisor.html" %}
 {% load static %}
 
-{% block title %}Dashboard T&eacute;cnico{% endblock %}
+{% block title %}Dashboard Supervisor{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'app/css/dashboard.css' %}">
 {% endblock %}
 
-{% block topbar_title %}Panel del T&eacute;cnico{% endblock %}
+{% block topbar_title %}Panel del Supervisor{% endblock %}
 
 {% block content %}
     {% include "luminarias/partials/dashboard_resumen.html" %}
