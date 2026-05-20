@@ -1,8 +1,10 @@
-<div class="top-actions">
-    <a href="#" class="action-btn primary">Nueva Luminaria</a>
-    <a href="#" class="action-btn secondary">Nueva Zona</a>
-    <a href="#" class="action-btn secondary">Nueva Red</a>
-</div>
+{% if mostrar_acciones %}
+    <div class="top-actions">
+        <a href="#" class="action-btn primary">Nueva Luminaria</a>
+        <a href="#" class="action-btn secondary">Nueva Zona</a>
+        <a href="#" class="action-btn secondary">Nueva Red</a>
+    </div>
+{% endif %}
 
 <div class="hero">
     <div>
@@ -29,11 +31,6 @@
     </div>
 
     <div class="card">
-        <div class="card-title">En Mantenimiento</div>
-        <div class="card-number warning">{{ luminarias_mantenimiento|default:"0" }}</div>
-    </div>
-
-    <div class="card">
         <div class="card-title">Con Fallas</div>
         <div class="card-number danger">{{ luminarias_falla|default:"0" }}</div>
     </div>
@@ -51,21 +48,17 @@
             </tr>
         </thead>
         <tbody>
-            <tr>
-                <td>Red Norte</td>
-                <td>1250 kWh</td>
-                <td class="success">Activa</td>
-            </tr>
-            <tr>
-                <td>Red Sur</td>
-                <td>1650 kWh</td>
-                <td class="success">Activa</td>
-            </tr>
-            <tr>
-                <td>Red Este</td>
-                <td>1587 kWh</td>
-                <td class="warning">Mantenimiento</td>
-            </tr>
+            {% for red in redes_consumo %}
+                <tr>
+                    <td>{{ red.nombre }}</td>
+                    <td>{{ red.consumo }} kWh</td>
+                    <td class="{{ red.estado_clase }}">{{ red.estado }}</td>
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="3">No hay redes registradas.</td>
+                </tr>
+            {% endfor %}
         </tbody>
     </table>
 </div>
