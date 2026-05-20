@@ -1,0 +1,71 @@
+<div class="top-actions">
+    <a href="#" class="action-btn primary">Nueva Luminaria</a>
+    <a href="#" class="action-btn secondary">Nueva Zona</a>
+    <a href="#" class="action-btn secondary">Nueva Red</a>
+</div>
+
+<div class="hero">
+    <div>
+        <h1>
+            {% if alcaldia_nombre %}
+                Alcald&iacute;a de {{ alcaldia_nombre }}
+            {% else %}
+                Alcald&iacute;a
+            {% endif %}
+        </h1>
+        <p>Sistema inteligente de monitoreo y control de luminarias p&uacute;blicas.</p>
+    </div>
+</div>
+
+<div class="cards">
+    <div class="card">
+        <div class="card-title">Total Luminarias</div>
+        <div class="card-number">{{ total_luminarias|default:"0" }}</div>
+    </div>
+
+    <div class="card">
+        <div class="card-title">Luminarias Activas</div>
+        <div class="card-number success">{{ luminarias_activas|default:"0" }}</div>
+    </div>
+
+    <div class="card">
+        <div class="card-title">En Mantenimiento</div>
+        <div class="card-number warning">{{ luminarias_mantenimiento|default:"0" }}</div>
+    </div>
+
+    <div class="card">
+        <div class="card-title">Con Fallas</div>
+        <div class="card-number danger">{{ luminarias_falla|default:"0" }}</div>
+    </div>
+</div>
+
+<div class="table-box">
+    <div class="table-title">Consumo por Red</div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Red</th>
+                <th>Consumo</th>
+                <th>Estado</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Red Norte</td>
+                <td>1250 kWh</td>
+                <td class="success">Activa</td>
+            </tr>
+            <tr>
+                <td>Red Sur</td>
+                <td>1650 kWh</td>
+                <td class="success">Activa</td>
+            </tr>
+            <tr>
+                <td>Red Este</td>
+                <td>1587 kWh</td>
+                <td class="warning">Mantenimiento</td>
+            </tr>
+        </tbody>
+    </table>
+</div>

@@ -1,125 +1,14 @@
-{% load static %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}LumSys{% endblock %}</title>
+{% extends "luminarias/base.html" %}
 
-    <link rel="stylesheet" href="{% static 'app/css/base.css' %}">
+{% block sidebar_menu %}
+    <a href="{% url 'dashboard_supervisor' %}">
+        <span>Inicio</span>
+    </a>
+    <a href="{% url 'agregar_tecnicos' %}">
+        <span>Agregar T&eacute;cnicos</span>
+    </a>
+{% endblock %}
 
-    {% block extra_css %}{% endblock %}
-</head>
-<body>
-    <div class="layout">
-
-    <!-- SIDEBAR -->
-
-    <aside class="sidebar">
-
-        <div class="sidebar-top">
-
-            <!-- LOGO -->
-
-            <div class="logo">
-
-                <h1>
-                    LumSys
-                </h1>
-
-                <p>
-                    Sistema de Alumbrado
-                </p>
-
-            </div>
-
-        
-
-            <nav class="menu">
-
-                <a href="{% url 'dashboard_supervisor' %}">
-                    <span>Inicio</span>
-                </a>
-                <a href="{% url 'agregar_tecnicos' %}">
-                    <span>Agregar Tecnicos</span>
-                </a>
-            </nav>
-
-        </div>
-
-        <!-- SIDEBAR FOOTER -->
-
-        <div class="sidebar-footer">
-
-            <div class="user-box">
-
-                <div class="avatar">
-                    T
-                </div>
-
-                <div class="user-info">
-
-                    <div class="user-name">
-                        Técnico
-                    </div>
-
-                    <div class="user-role">
-                        Operador
-                    </div>
-
-                </div>
-
-            </div>
-
-            <button class="btn btn-danger">
-
-                Cerrar Sesión
-
-            </button>
-
-        </div>
-
-    </aside>
-
-    <!-- MAIN -->
-
-    <main class="main">
-
-        <!-- TOPBAR -->
-
-        <header class="topbar">
-
-            <div class="topbar-title">
-
-                {% block topbar_title %}
-                    Sistema de Alumbrado Público
-                {% endblock %}
-
-            </div>
-
-            <div class="topbar-actions">
-
-                {% block topbar_actions %}
-                {% endblock %}
-
-            </div>
-
-        </header>
-
-        <!-- CONTENT -->
-
-        <section class="content">
-
-            {% block content %}
-            {% endblock %}
-
-        </section>
-
-    </main>
-
-</div>
-    
-    <script src="{% static 'app/js/base.js' %}"></script>
-    {% block extra_js %}{% endblock %}
-</body>
-</html>
+{% block user_initial %}S{% endblock %}
+{% block user_name %}Supervisor{% endblock %}
+{% block user_role %}Administrador{% endblock %}

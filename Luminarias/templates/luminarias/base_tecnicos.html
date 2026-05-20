@@ -1,101 +1,20 @@
-{% load static %}
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}LumSys{% endblock %}</title>
+{% extends "luminarias/base.html" %}
 
-    <link rel="stylesheet" href="{% static 'app/css/base.css' %}">
-
-    {% block extra_css %}{% endblock %}
-    {% block extra_styles %}{% endblock %}
-</head>
-<body>
-    <div class="layout">
-
-        <aside class="sidebar">
-
-            <div class="sidebar-top">
-
-                <div class="logo">
-                    <h1>LumSys</h1>
-                    <p>Sistema de Alumbrado</p>
-                </div>
-
-                <nav class="menu">
-
+{% block sidebar_menu %}
     <a href="{% url 'dashboard_tecnico' %}">
         <span>Inicio</span>
     </a>
-
     <a href="{% url 'agregar_redes' %}">
         <span>Redes</span>
     </a>
-
     <a href="#">
         <span>Zonas</span>
     </a>
-
     <a href="#">
         <span>Luminarias</span>
     </a>
+{% endblock %}
 
-</nav>
-
-            </div>
-
-            <div class="sidebar-footer">
-
-                <div class="user-box">
-
-                    <div class="avatar">
-                        T
-                    </div>
-
-                    <div class="user-info">
-                        <div class="user-name">Técnico</div>
-                        <div class="user-role">Operador</div>
-                    </div>
-
-                </div>
-
-                <button class="btn btn-danger">
-                    Cerrar Sesión
-                    <a href="{% url 'agregar_redes' %}">
-                    <span>Redes</span>
-                </a>
-                </button>
-
-            </div>
-
-        </aside>
-
-        <main class="main">
-
-            <header class="topbar">
-
-                <div class="topbar-title">
-                    {% block topbar_title %}
-                        Sistema de Alumbrado Público
-                    {% endblock %}
-                </div>
-
-                <div class="topbar-actions">
-                    {% block topbar_actions %}{% endblock %}
-                </div>
-
-            </header>
-
-            <section class="content">
-                {% block content %}{% endblock %}
-            </section>
-
-        </main>
-
-    </div>
-
-    <script src="{% static 'app/js/base.js' %}"></script>
-    {% block extra_js %}{% endblock %}
-</body>
-</html>
+{% block user_initial %}T{% endblock %}
+{% block user_name %}T&eacute;cnico{% endblock %}
+{% block user_role %}Operador{% endblock %}

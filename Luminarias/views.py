@@ -1,43 +1,19 @@
 from django.shortcuts import render
 
-def dashboard_supervisor(request):
-    return render(request, 'Luminarias/dashboad_supervisor.html')
 
-def agregar_tecnicos(request):
-    return render(request, 'Luminarias/agregar_tecnicos.html')
+def page_view(template_name):
+    def view(request):
+        return render(request, f"luminarias/{template_name}.html")
 
-def agregar_redes(request):
-    return render(request, 'Luminarias/agregar_redes.html')
-
-def base_supervisor(request):
-    return render(request, 'Luminarias/base_supervisor.html')
-
-def base_tecnicos(request):
-    return render(request, 'Luminarias/base_tecnicos.html')
-
-def login_view(request):
-
-    return render(request,"luminarias/login.html"
-    )
+    view.__name__ = template_name
+    return view
 
 
-
-
-def dashboard_tecnico(request):
-
-
-    return render(request,"luminarias/dashboard_tecnico.html"
-    )
-
-
-def redes(request):    
-    return render(request, "luminarias/redes.html")
-
-
-def zonas(request):
-    return render(request, "luminarias/zonas.html")
-
-
-def luminarias(request):
-    return render(request, "luminarias/luminarias.html")
-
+login_view = page_view("login")
+dashboard_supervisor = page_view("dashboard_supervisor")
+dashboard_tecnico = page_view("dashboard_tecnico")
+agregar_tecnicos = page_view("agregar_tecnicos")
+agregar_redes = page_view("agregar_redes")
+base = page_view("base")
+base_supervisor = page_view("base_supervisor")
+base_tecnico = page_view("base_tecnico")

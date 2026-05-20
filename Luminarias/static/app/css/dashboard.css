@@ -1,20 +1,20 @@
 .top-actions {
-    display: flex;
-    gap: 15px;
     align-items: center;
-    margin-bottom: 25px;
+    display: flex;
     flex-wrap: wrap;
+    gap: 15px;
+    margin-bottom: 25px;
 }
 
 .action-btn {
-    display: inline-block;
-    padding: 12px 20px;
+    border: 1px solid transparent;
     border-radius: 14px;
     cursor: pointer;
+    display: inline-block;
     font-weight: 600;
-    transition: 0.3s;
-    border: 1px solid transparent;
+    padding: 12px 20px;
     text-decoration: none;
+    transition: 0.3s;
 }
 
 .action-btn:hover {
@@ -22,33 +22,33 @@
 }
 
 .primary {
-    background: #2563eb;
-    color: white;
+    background: var(--accent);
+    color: #ffffff;
 }
 
 .secondary {
-    background: #1e293b;
-    border: 1px solid var(--border);
-    color: white;
+    background: var(--text);
+    border-color: var(--border);
+    color: #ffffff;
 }
 
 .hero {
+    align-items: center;
     background: linear-gradient(135deg, #172033, #0f172a);
     border: 1px solid var(--border);
     border-radius: 24px;
-    padding: 40px;
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 30px;
     flex-wrap: wrap;
+    gap: 30px;
+    justify-content: space-between;
     margin-bottom: 30px;
+    padding: 40px;
 }
 
 .hero h1 {
+    color: #ffffff;
     font-size: 42px;
     margin-bottom: 12px;
-    color: white;
 }
 
 .hero p {
@@ -58,8 +58,8 @@
 
 .cards {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
     gap: 22px;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
     margin-bottom: 30px;
 }
 
@@ -101,14 +101,14 @@
 }
 
 .table-title {
-    margin-bottom: 20px;
     font-size: 22px;
     font-weight: 700;
+    margin-bottom: 20px;
 }
 
 table {
-    width: 100%;
     border-collapse: collapse;
+    width: 100%;
 }
 
 th,

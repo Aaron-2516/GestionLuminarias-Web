@@ -1,0 +1,117 @@
+.header {
+    align-items: center;
+    display: flex;
+    gap: 16px;
+    justify-content: space-between;
+    margin-bottom: 28px;
+}
+
+.header h2 {
+    font-size: 1.6rem;
+    margin: 0;
+}
+
+.cards {
+    display: grid;
+    gap: 24px;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    margin-bottom: 28px;
+}
+
+.card {
+    background: var(--card-bg);
+    border-radius: 12px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    font-size: 15px;
+    padding: 20px;
+}
+
+.card h3 {
+    color: var(--accent);
+    font-size: 1.1rem;
+    margin-top: 0;
+}
+
+.card p {
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin: 8px 0 0;
+}
+
+.filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 28px;
+}
+
+.filters form {
+    display: flex;
+    gap: 8px;
+}
+
+.filters input[type="search"],
+.filters select {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 12px;
+}
+
+.filters input[type="search"] {
+    cursor: text;
+}
+
+.filters select {
+    cursor: pointer;
+}
+
+.filters button,
+.table-tecnicos td button {
+    background: var(--accent);
+    border: none;
+    border-radius: 8px;
+    color: #ffffff;
+    cursor: pointer;
+}
+
+.filters button {
+    padding: 8px 16px;
+}
+
+.table-tecnicos {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+.table-tecnicos th,
+.table-tecnicos td {
+    border: 1px solid var(--border);
+    padding: 12px;
+    text-align: left;
+}
+
+.table-tecnicos th {
+    background: var(--card-bg);
+}
+
+.table-tecnicos td button {
+    margin-right: 8px;
+    padding: 6px 10px;
+}
+
+.panel-detalle {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    display: none;
+    margin-top: 20px;
+    padding: 16px;
+}
+
+@media (max-width: 600px) {
+    .filters,
+    .filters form {
+        flex-direction: column;
+    }
+}
