@@ -1,0 +1,86 @@
+{% extends "luminarias/base_tecnicos.html" %}
+{% load static %}
+
+{% block title %}Agregar Redes{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'app/css/agregar_redes.css' %}">
+<link rel="stylesheet" href="{% static 'app/css/base_supervisor.css' %}">
+{% endblock %}
+
+{% block content %}
+            <div class="header">
+                <h2>Redes</h2>
+            </div>
+            <div>
+                <section class="filters">
+            
+                    <form action="/buscar" method="GET">
+                        <input type="search" id="barra-busqueda" name="q" placeholder="Nombre o Codigo">
+                    </form>
+
+                    <select name="zonas" id="zona-select">
+                        <option value="">-- Seleccione una estado --</option>
+                        <option value="zn">Activo</option>
+                        <option value="zn">Inactivo</option>                
+                        <option value="zn">Mantenimiento</option>
+                    </select>
+
+                    <select name="estados" id="estado-select">
+                        <option value="">-- Seleccione una tension --</option>
+                        <option value="activo">Tension 1</option>
+                        <option value="inactivo">Tension 2</option>
+                    </select>
+
+                    <button class="submit">Buscar</button>
+                    <button class="reset">Limpiar</button>
+                </section>    
+            </div>
+
+                <h3>Redes de Distribución</h3>
+                <table class="table-tecnicos">
+                    <tr>
+                        <th>Codigo</th>
+                        <th>Nombre</th>
+                        <th>Tension</th>
+                        <th>Luminarias</th>
+                        <th>Capacidad</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                    <tr onclick="mostrarDetalle('Red Norte', 'Código: red-001, Tensión: 220V, Luminarias: 285, Capacidad: 300, Estado: Activo')">
+                        <td>red-001</td>
+                        <td>Red Norte</td>
+                        <td>220V</td>
+                        <td>285</td>
+                        <td>300</td>
+                        <td>Activo</td>
+                        <td><button type="button">Ver</button>
+                        <button type="button">Editar</button>
+                    <button type="button">Eliminar</button></td>
+                    </tr>
+                    <tr onclick="mostrarDetalle('Red Sur', 'Código: red-002, Tensión: 220V, Luminarias: 150, Capacidad: 200, Estado: Inactivo')">
+                        <td>red-002</td>
+                        <td>Red Sur</td>
+                        <td>220V</td>
+                        <td>150</td>
+                        <td>200</td>
+                        <td>Inactivo</td>
+                        <td><button type="button">Ver</button>
+                        <button type="button">Editar</button>
+                    <button type="button">Eliminar</button></td>
+                    </tr>
+                </table>
+
+
+                <div id="panelDetalle" class="panel-detalle">
+                    <h3 id="detalleTitulo"></h3>
+                    <p id="detalleTexto"></p>
+                </div>
+
+            </section>
+
+            {% block extra_js %}
+            <script src="{% static 'app/js/agregar_redes.js' %}"></script>
+            {% endblock extra_js %}
+ {% endblock %}
