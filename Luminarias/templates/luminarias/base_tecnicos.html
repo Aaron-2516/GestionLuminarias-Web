@@ -1,0 +1,42 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}LumSys{% endblock %}</title>
+
+    <link rel="stylesheet" href="{% static 'app/css/base.css' %}">
+
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <div class="layout">
+        <aside class="sidebar">
+            <h1>LumSys</h1>
+            <span>Sistema de alumbrado</span>
+            
+            <nav>
+                <ul class="nav-links">
+                    <li><a href="#">Inicio</a></li>
+                    <li><a href="#">Redes</a></li>
+                    <li><a href="#">Zonas</a></li>
+                    <li><a href="#">Luminarias</a></li>
+                </ul>
+            </nav>
+            <sidebar-footer class="sidebar-footer">
+                <span>Tecnico</span>
+                <button type="button" class="logout">Cerrar Sesión</button>
+            </sidebar-footer>
+        </aside>
+
+        <main class="main">
+            {% block content %}
+            {% endblock %}
+        </main>
+    </div>
+
+    <script src="{% static 'app/js/base.js' %}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

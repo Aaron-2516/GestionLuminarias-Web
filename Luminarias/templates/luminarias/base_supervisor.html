@@ -1,0 +1,36 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}LumSys{% endblock %}</title>
+
+    <link rel="stylesheet" href="{% static 'app/css/base.css' %}">
+
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <div class="layout">
+        <aside class="sidebar">
+            <h1>LumSys</h1>
+            <span>Sistema de alumbrado</span>
+            
+            <nav>
+                <ul class="nav-links">
+                    <li><a href="/dashboard_supervisor/">Inicio</a></li>
+                    <li><a href="/agregar_tecnicos/">Agregar Técnicos</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <main class="main">
+            {% block content %}
+            {% endblock %}
+        </main>
+    </div>
+
+    <script src="{% static 'app/js/base.js' %}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
