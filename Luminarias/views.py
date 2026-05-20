@@ -15,3 +15,29 @@ def base_supervisor(request):
 def base_tecnicos(request):
     return render(request, 'Luminarias/base_tecnicos.html')
 
+def login_view(request):
+
+    return render(request,"luminarias/login.html"
+    )
+
+
+
+
+def dashboard_tecnico(request):
+
+
+    return render(request,"luminarias/dashboard_tecnico.html"
+    )
+
+
+def redes(request):    
+    return render(request, "luminarias/redes.html")
+
+
+def zonas(request):
+    return render(request, "luminarias/zonas.html")
+
+
+def luminarias(request):
+    return render(request, "luminarias/luminarias.html")
+
