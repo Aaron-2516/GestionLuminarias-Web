@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+
+    {% load static %}
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>
+        Cambiar contraseña
+    </title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet"
+    >
+
+    <link rel="stylesheet" href="{% static 'app/css/login.css' %}">
+
+</head>
+
+<body>
+
+<div class="login-container">
+
+    <div class="login-card">
+
+        <div class="logo">
+            <img
+                src="{% static 'app/img/logo.jpg' %}"
+                alt="Logo LumSys"
+                class="logo-img"
+            >
+        </div>
+
+        <h1 class="title">
+            Cambiar contraseña
+        </h1>
+
+        <p class="subtitle">
+            Actualiza tus datos de acceso
+        </p>
+
+        <form method="POST">
+
+            {% csrf_token %}
+
+            {% if error %}
+
+            <p class="login-error">
+                {{ error }}
+            </p>
+
+            {% endif %}
+
+            <div class="form-group">
+
+                <label class="label">
+                    Usuario
+                </label>
+
+                <input
+                    type="text"
+                    name="username"
+                    class="input"
+                    placeholder="Ingrese su usuario"
+                    required
+                >
+
+            </div>
+
+            <div class="form-group">
+
+                <label class="label">
+                    Contraseña actual
+                </label>
+
+                <div class="password-field">
+                    <input
+                        type="password"
+                        name="password_actual"
+                        class="input"
+                        placeholder="Ingrese su contraseña actual"
+                        required
+                    >
+
+                    <button
+                        type="button"
+                        class="password-toggle"
+                        aria-label="Mostrar contrasena"
+                    >
+                        Ver
+                    </button>
+                </div>
+
+            </div>
+
+            <div class="form-group">
+
+                <label class="label">
+                    Nueva contraseña
+                </label>
+
+                <div class="password-field">
+                    <input
+                        type="password"
+                        name="password_nueva"
+                        class="input"
+                        placeholder="Ingrese su nueva contraseña"
+                        required
+                    >
+
+                    <button
+                        type="button"
+                        class="password-toggle"
+                        aria-label="Mostrar contrasena"
+                    >
+                        Ver
+                    </button>
+                </div>
+
+            </div>
+
+            <div class="form-group">
+
+                <label class="label">
+                    Confirmar contraseña
+                </label>
+
+                <div class="password-field">
+                    <input
+                        type="password"
+                        name="confirmar_password"
+                        class="input"
+                        placeholder="Confirme su nueva contraseña"
+                        required
+                    >
+
+                    <button
+                        type="button"
+                        class="password-toggle"
+                        aria-label="Mostrar contrasena"
+                    >
+                        Ver
+                    </button>
+                </div>
+
+            </div>
+
+            <button type="submit" class="login-btn">
+                Guardar contraseña
+            </button>
+
+        </form>
+
+        <a href="{% url 'login' %}" class="password-link">
+            Volver al inicio de sesión
+        </a>
+
+    </div>
+
+</div>
+
+<script src="{% static 'app/js/password_toggle.js' %}"></script>
+
+</body>
+
+</html>
