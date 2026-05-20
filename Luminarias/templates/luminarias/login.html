@@ -3,6 +3,8 @@
 
 <head>
 
+    {% load static %}
+
     <meta charset="UTF-8">
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -18,231 +20,7 @@
         rel="stylesheet"
     >
 
-    <style>
-
-        *{
-            margin:0;
-            padding:0;
-            box-sizing:border-box;
-        }
-
-        :root{
-
-            --bg:#f4f7fb;
-
-            --primary:#1e3a5f;
-
-            --primary2:#2563eb;
-
-            --border:#dbe3ec;
-
-            --text:#1e293b;
-
-            --muted:#64748b;
-        }
-
-        body{
-
-            font-family:'Sora', sans-serif;
-
-            background:linear-gradient(
-                135deg,
-                #1e3a5f,
-                #2563eb
-            );
-
-            min-height:100vh;
-
-            display:flex;
-
-            justify-content:center;
-
-            align-items:center;
-
-            padding:20px;
-        }
-
-        .login-container{
-
-            width:100%;
-
-            max-width:430px;
-        }
-
-        .login-card{
-
-            background:white;
-
-            border-radius:28px;
-
-            padding:45px;
-
-            box-shadow:0 20px 60px rgba(0,0,0,.18);
-        }
-
-        .logo{
-
-            width:90px;
-
-            height:90px;
-
-            margin:0 auto 25px;
-
-            border-radius:22px;
-
-            background:linear-gradient(
-                135deg,
-                #1e3a5f,
-                #2563eb
-            );
-
-            display:flex;
-
-            align-items:center;
-
-            justify-content:center;
-
-            color:white;
-
-            font-size:32px;
-
-            font-weight:700;
-        }
-
-        .title{
-
-            text-align:center;
-
-            margin-bottom:10px;
-
-            color:var(--text);
-
-            font-size:34px;
-
-            font-weight:700;
-        }
-
-        .subtitle{
-
-            text-align:center;
-
-            color:var(--muted);
-
-            margin-bottom:35px;
-
-            font-size:14px;
-        }
-
-        .form-group{
-
-            margin-bottom:22px;
-        }
-
-        .label{
-
-            display:block;
-
-            margin-bottom:8px;
-
-            font-size:14px;
-
-            font-weight:600;
-
-            color:var(--text);
-        }
-
-        .input{
-
-            width:100%;
-
-            padding:15px 16px;
-
-            border:1px solid var(--border);
-
-            border-radius:14px;
-
-            outline:none;
-
-            font-size:14px;
-
-            transition:.2s;
-
-            font-family:'Sora', sans-serif;
-        }
-
-        .input:focus{
-
-            border-color:var(--primary2);
-
-            box-shadow:0 0 0 4px rgba(37,99,235,.1);
-        }
-
-        .login-btn{
-
-            width:100%;
-
-            border:none;
-
-            padding:15px;
-
-            border-radius:14px;
-
-            background:linear-gradient(
-                135deg,
-                #1e3a5f,
-                #2563eb
-            );
-
-            color:white;
-
-            font-size:15px;
-
-            font-weight:600;
-
-            cursor:pointer;
-
-            transition:.2s;
-
-            margin-top:10px;
-        }
-
-        .login-btn:hover{
-
-            transform:translateY(-2px);
-
-            opacity:.95;
-        }
-
-        .footer{
-
-            margin-top:28px;
-
-            text-align:center;
-
-            font-size:13px;
-
-            color:var(--muted);
-        }
-
-        .system{
-
-            color:var(--primary2);
-
-            font-weight:700;
-        }
-
-        @media(max-width:500px){
-
-            .login-card{
-                padding:35px 25px;
-            }
-
-            .title{
-                font-size:28px;
-            }
-        }
-
-    </style>
+    <link rel="stylesheet" href="{% static 'app/css/login.css' %}">
 
 </head>
 
@@ -255,7 +33,11 @@
         <!-- LOGO -->
 
         <div class="logo">
-            LS
+            <img
+                src="{% static 'app/img/logo2.0.gif' %}"
+                alt="Logo LumSys"
+                class="logo-img"
+            >
         </div>
 
         <!-- TITULO -->
@@ -273,6 +55,22 @@
         <form method="POST">
 
             {% csrf_token %}
+
+            {% if error %}
+
+            <p class="login-error">
+                {{ error }}
+            </p>
+
+            {% endif %}
+
+            {% if success %}
+
+            <p class="login-success">
+                {{ success }}
+            </p>
+
+            {% endif %}
 
             <!-- USUARIO -->
 
@@ -300,13 +98,23 @@
                     Contraseña
                 </label>
 
-                <input
-                    type="password"
-                    name="password"
-                    class="input"
-                    placeholder="Ingrese su contraseña"
-                    required
-                >
+                <div class="password-field">
+                    <input
+                        type="password"
+                        name="password"
+                        class="input"
+                        placeholder="Ingrese su contraseña"
+                        required
+                    >
+
+                    <button
+                        type="button"
+                        class="password-toggle"
+                        aria-label="Mostrar contrasena"
+                    >
+                        Ver
+                    </button>
+                </div>
 
             </div>
 
@@ -319,6 +127,10 @@
             </button>
 
         </form>
+
+        <a href="{% url 'cambiar_contrasena' %}" class="password-link">
+            Cambiar contraseña
+        </a>
 
         <!-- FOOTER -->
 
@@ -334,6 +146,8 @@
     </div>
 
 </div>
+
+<script src="{% static 'app/js/password_toggle.js' %}"></script>
 
 </body>
 
