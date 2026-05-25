@@ -11,7 +11,6 @@ class Rol(models.Model):
     def __str__(self):
         return self.roles
 
-
 class Usuario(models.Model):
     id_usuario = models.CharField(max_length=12, primary_key=True)
     rol = models.ForeignKey(
@@ -26,13 +25,13 @@ class Usuario(models.Model):
     nombre_usuario = models.CharField(max_length=50)
     apellido_usuario = models.CharField(max_length=50)
     telefono = models.IntegerField()
+    estado = models.BooleanField(default=True)
 
     class Meta:
         db_table = "usuario"
 
     def __str__(self):
         return f"{self.nombre_usuario} {self.apellido_usuario}"
-
 
 class Municipio(models.Model):
     id_municipio = models.CharField(max_length=25, primary_key=True)
@@ -143,6 +142,27 @@ class Zona(models.Model):
 
     def __str__(self):
         return self.nombre_zona
+
+class AsignacionZona(models.Model):
+    usuario = models.ForeignKey(
+        Usuario,
+        on_delete=models.RESTRICT,
+        db_column="id_usuario",
+        related_name="zonas_asignadas"
+    )
+    zona = models.ForeignKey(
+        Zona,
+        on_delete=models.RESTRICT,
+        db_column="id_zona",
+        related_name="tecnicos_asignados"
+    )
+
+    class Meta:
+        db_table = "asignacion_zona"
+        unique_together = ("usuario", "zona")
+
+    def __str__(self):
+        return f"{self.usuario} - {self.zona}"
 
 
 class Crea(models.Model):

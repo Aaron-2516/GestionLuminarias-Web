@@ -1,7 +1,7 @@
 {% extends "luminarias/base_supervisor.html" %}
 {% load static %}
 
-{% block title %}Agregar T&eacute;cnicos{% endblock %}
+{% block title %}Agregar Técnicos{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'app/css/listado.css' %}">
@@ -9,96 +9,154 @@
 
 {% block content %}
 <div class="header">
-    <h2>Agregar T&eacute;cnicos</h2>
+    <h2>Agregar Tecnicos</h2>
+    <button id="abrirModal" class="btn-abrir" type="button">Agregar Tecnico</button>
 </div>
+
+{% if messages %}
+<div class="alerts">
+    {% for message in messages %}
+    <p class="alert alert-{{ message.tags }}">{{ message }}</p>
+    {% endfor %}
+</div>
+{% endif %}
 
 <div class="cards">
     <article class="card">
-        <h3>Total T&eacute;cnicos</h3>
-        <p>128</p>
+        <h3>Total Técnicos</h3>
+        <p>{{ total_tecnicos }}</p>
     </article>
     <article class="card">
         <h3>Con zonas asignadas</h3>
-        <p>120</p>
+        <p>{{ tecnicos_con_zona }}</p>
     </article>
     <article class="card">
         <h3>Sin zonas asignadas</h3>
-        <p>6</p>
+        <p>{{ tecnicos_sin_zona }}</p>
     </article>
     <article class="card">
-        <h3>T&eacute;cnicos Inactivos</h3>
-        <p>2</p>
+        <h3>Técnicos Inactivos</h3>
+        <p>{{ tecnicos_inactivos }}</p>
     </article>
 </div>
 
 <section class="filters">
-    <form action="/buscar" method="GET">
+    <form id="form-busqueda" action="" method="GET">
         <label for="barra-busqueda">Buscar:</label>
         <input
             type="search"
             id="barra-busqueda"
             name="q"
-            placeholder="Nombre o C&oacute;digo"
+            placeholder="Nombre o Código"
+            value="{{ q }}"
         >
     </form>
 
-    <select name="zonas" id="zona-select">
+    <select name="zona" id="zona-select" form="form-busqueda" onchange="this.form.submit()">
         <option value="">-- Seleccione una zona --</option>
-        <option value="zona1">Zona 1</option>
-        <option value="zona2">Zona 2</option>
-        <option value="zona3">Zona 3</option>
+        {% for zona in zonas %}
+        <option value="{{ zona.id_zona }}"{% if selected_zona == zona.id_zona %} selected{% endif %}>
+            {{ zona.nombre_zona }}{% if zona.red %} - {{ zona.red.nombre_red }}{% endif %}
+        </option>
+        {% endfor %}
     </select>
 
-    <select name="estados" id="estado-select">
+    <select name="estado" id="estado-select" form="form-busqueda" onchange="this.form.submit()">
         <option value="">-- Seleccione un estado --</option>
-        <option value="activo">Activo</option>
-        <option value="inactivo">Inactivo</option>
+        <option value="activo"{% if selected_estado == "activo" %} selected{% endif %}>Activo</option>
+        <option value="inactivo"{% if selected_estado == "inactivo" %} selected{% endif %}>Inactivo</option>
     </select>
 
-    <button class="submit" type="button">Buscar</button>
-    <button class="reset" type="button">Limpiar</button>
+    <button class="submit" type="submit" form="form-busqueda">Buscar</button>
+    <button class="reset" type="button" id="btnLimpiarFiltros">Limpiar</button>
 </section>
 
-<h3>T&eacute;cnicos Registrados</h3>
+<h3>Técnicos Registrados</h3>
 
-<table class="table-tecnicos">
-    <tr>
-        <th>C&oacute;digo</th>
-        <th>Nombre</th>
-        <th>Credenciales</th>
-        <th>Zona Asignada</th>
-        <th>Turno</th>
-        <th>Acciones</th>
-    </tr>
-    <tr onclick="mostrarDetalle('Ana L&oacute;pez', 'C&oacute;digo: ana2026, Credenciales: ana2026@gob.sv, Zona Asignada: Zona 2, Turno: Nocturno')">
-        <td>ana2026</td>
-        <td>Ana L&oacute;pez</td>
-        <td>ana2026@gob.sv</td>
-        <td>Zona 2</td>
-        <td>Nocturno</td>
-        <td>
-            <button type="button">Ver</button>
-            <button type="button">Editar</button>
-            <button type="button">Estado</button>
-        </td>
-    </tr>
-    <tr onclick="mostrarDetalle('Carlos Rodr&iacute;guez', 'C&oacute;digo: carlos3045, Credenciales: carlos3045@gob.sv, Zona Asignada: Zona 1, Turno: Matutino')">
-        <td>carlos3045</td>
-        <td>Carlos Rodr&iacute;guez</td>
-        <td>carlos3045@gob.sv</td>
-        <td>Zona 1</td>
-        <td>Matutino</td>
-        <td>
-            <button type="button">Ver</button>
-            <button type="button">Editar</button>
-            <button type="button">Estado</button>
-        </td>
-    </tr>
-</table>
+<div class="table-wrapper">
+    <table class="table-tecnicos">
+        <thead>
+            <tr>
+                <th>Código</th>
+                <th>Nombre completo</th>
+                <th>Correo</th>
+                <th>Teléfono</th>
+                <th>Zona</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            {% for tecnico in tecnicos %}
+            <tr>
+                <td>{{ tecnico.id_usuario }}</td>
+                <td>{{ tecnico.nombre_usuario }} {{ tecnico.apellido_usuario }}</td>
+                <td>{{ tecnico.id_usuario }}@gob.sv</td>
+                <td>{{ tecnico.telefono }}</td>
+                <td>
+                    {% for asignacion in tecnico.zonas_asignadas.all %}
+                        {{ asignacion.zona.nombre_zona }}
+                        {% if asignacion.zona.red %}
+                        {% endif %}
+                        {% if not forloop.last %}, {% endif %}
+                    {% empty %}
+                        Sin zona
+                    {% endfor %}
+                </td>
+                <td>
+                    {% if tecnico.estado %}
+                    <span class="badge badge-activo">Activo</span>
+                    {% else %}
+                    <span class="badge badge-inactivo">Inactivo</span>
+                    {% endif %}
+                </td>
+                <td class="acciones">
+                    <button type="button">Ver</button>
+                    <button type="button">Editar</button>
+                    <button type="button">Estado</button>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td class="empty-state" colspan="8">No hay técnicos registrados</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div id="contenedorModal" class="modal">
+    <div class="modal-caja">
+        <button type="button" id="cerrarModal" class="cerrar">&times;</button>
+
+        <h2>Agregar Técnico</h2>
+
+        <form method="POST">
+            {% csrf_token %}
+
+            <label for="nombre_usuario">Nombre</label>
+            <input type="text" id="nombre_usuario" name="nombre_usuario" required>
+
+            <label for="apellido_usuario">Apellido</label>
+            <input type="text" id="apellido_usuario" name="apellido_usuario" required>
+
+            <label for="telefono">Teléfono</label>
+            <input type="number" id="telefono" name="telefono" required>
+
+            <label for="contrasena">Contraseña</label>
+            <input type="password" id="contrasena" name="contrasena" required>
+
+            <button type="submit" class="btn-guardar">Guardar Técnico</button>
+        </form>
+    </div>
+</div>
+
 
 {% include "luminarias/partials/panel_detalle.html" %}
 {% endblock content %}
 
 {% block extra_js %}
 <script src="{% static 'app/js/detalle_panel.js' %}"></script>
+<script src="{% static 'app/js/modal_agregar.js' %}"></script>
 {% endblock extra_js %}
