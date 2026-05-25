@@ -70,15 +70,7 @@
 }
 
 .filters button,
-.table-tecnicos td button {
-    background: var(--accent);
-    border: none;
-    border-radius: 8px;
-    color: #ffffff;
-    cursor: pointer;
-}
-
-.filters button,
+.table-tecnicos td button,
 .table-redes td button {
     background: var(--accent);
     border: none;
@@ -86,12 +78,15 @@
     color: #ffffff;
     cursor: pointer;
 }
+
 /* =========================
-   TABLA MEJORADA
+   TABLAS
 ========================= */
 
-.table-wrapper {
+.table-wrapper,
+.table-wrapper-redes {
     width: 100%;
+    max-width: 100%;
     overflow-x: auto;
     margin-top: 18px;
     background: #ffffff;
@@ -100,7 +95,9 @@
     box-shadow: 0 4px 12px rgba(15, 23, 42, 0.07);
 }
 
-.table-tecnicos {
+/* Tabla técnicos y redes con el mismo diseño */
+.table-tecnicos,
+.table-redes {
     width: 100%;
     min-width: 720px;
     border-collapse: separate;
@@ -110,12 +107,14 @@
     background: #ffffff;
 }
 
-.table-tecnicos thead {
+.table-tecnicos thead,
+.table-redes thead {
     background: linear-gradient(135deg, #0f3c78, #1d6fd6);
     color: #ffffff;
 }
 
-.table-tecnicos th {
+.table-tecnicos th,
+.table-redes th {
     padding: 11px 12px;
     text-align: left;
     font-size: 10px;
@@ -126,15 +125,18 @@
     border: none;
 }
 
-.table-tecnicos th:first-child {
+.table-tecnicos th:first-child,
+.table-redes th:first-child {
     border-top-left-radius: 12px;
 }
 
-.table-tecnicos th:last-child {
+.table-tecnicos th:last-child,
+.table-redes th:last-child {
     border-top-right-radius: 12px;
 }
 
-.table-tecnicos td {
+.table-tecnicos td,
+.table-redes td {
     padding: 10px 12px;
     text-align: left;
     vertical-align: middle;
@@ -142,41 +144,51 @@
     border-bottom: 1px solid #e5e7eb;
 }
 
-.table-tecnicos tbody tr:nth-child(even) {
+.table-tecnicos tbody tr:nth-child(even),
+.table-redes tbody tr:nth-child(even) {
     background-color: #f8fafc;
 }
 
-.table-tecnicos tbody tr:nth-child(odd) {
+.table-tecnicos tbody tr:nth-child(odd),
+.table-redes tbody tr:nth-child(odd) {
     background-color: #ffffff;
 }
 
-.table-tecnicos tbody tr {
+.table-tecnicos tbody tr,
+.table-redes tbody tr {
     transition: background-color 0.2s ease;
 }
 
-.table-tecnicos tbody tr:hover {
+.table-tecnicos tbody tr:hover,
+.table-redes tbody tr:hover {
     background-color: #eaf3ff;
 }
 
-.table-tecnicos tbody tr:last-child td {
+.table-tecnicos tbody tr:last-child td,
+.table-redes tbody tr:last-child td {
     border-bottom: none;
 }
 
-.table-tecnicos td:first-child {
+.table-tecnicos td:first-child,
+.table-redes td:first-child {
     color: #1d4ed8;
     font-weight: 700;
 }
 
-.table-tecnicos .acciones {
+/* Columna acciones */
+.table-tecnicos .acciones,
+.table-redes .acciones {
     display: flex;
     gap: 6px;
     align-items: center;
+    white-space: nowrap;
 }
 
-.table-tecnicos td button {
+.table-tecnicos td button,
+.table-redes td button {
     margin-right: 0;
     padding: 5px 8px;
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 600;
     border-radius: 20px;
     background: #e8f1ff;
@@ -184,11 +196,11 @@
     transition: all 0.2s ease;
 }
 
-.table-tecnicos td button:hover {
+.table-tecnicos td button:hover,
+.table-redes td button:hover {
     background: var(--accent);
     color: #ffffff;
 }
-
 
 /* Estados tipo etiqueta */
 .badge {
@@ -199,6 +211,7 @@
     font-size: 11px;
     font-weight: 700;
     padding: 4px 8px;
+    white-space: nowrap;
 }
 
 .badge-activo {
@@ -209,6 +222,11 @@
 .badge-inactivo {
     background: #fee2e2;
     color: #991b1b;
+}
+
+.badge-warning {
+    background: #fef3c7;
+    color: #92400e;
 }
 
 /* Texto cuando no hay datos */
@@ -227,45 +245,6 @@
     display: none;
     margin-top: 20px;
     padding: 16px;
-}
-
-@media (max-width: 500s0px) {
-    .filters,
-    .filters form {
-        flex-direction: column;
-    }
-}
-
-@media (max-width: 768px) {
-    .table-tecnicos {
-        font-size: 12px;
-        min-width: 650px;
-    }
-
-    .table-tecnicos th,
-    .table-tecnicos td {
-        padding: 9px 10px;
-    }
-
-    .table-tecnicos td button {
-        font-size: 11px;
-        padding: 5px 8px;
-    }
-
-    .header h2 {
-        font-size: 20px;
-    }
-
-    .filters {
-        flex-direction: column;
-        align-items: stretch;
-    }
-
-    .filters input,
-    .filters select,
-    .filters button {
-        width: 100%;
-    }
 }
 
 /* Estilos para el modal */

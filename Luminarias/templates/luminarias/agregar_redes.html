@@ -4,79 +4,163 @@
 {% block title %}Agregar Redes{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'app/css/listado.css' %}">
+<link rel="stylesheet" href="{% static 'app/css/agregar_redes.css' %}">
 {% endblock %}
 
 {% block content %}
 <div class="header">
-    <h2>Redes</h2>
+    <h2>Agregar Redes</h2>
+    <button id="abrirModal" class="btn-abrir" type="button">Agregar Red</button>
+</div>
+
+{% if messages %}
+<div class="alerts">
+    {% for message in messages %}
+    <p class="alert alert-{{ message.tags }}">{{ message }}</p>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="cards">
+    <article class="card">
+        <h3>Total Redes</h3>
+        <p>{{ total_redes }}</p>
+    </article>
+
+    <article class="card">
+        <h3>Con zonas asignadas</h3>
+        <p>{{ redes_con_zona }}</p>
+    </article>
+
+    <article class="card">
+        <h3>Sin zonas asignadas</h3>
+        <p>{{ redes_sin_zona }}</p>
+    </article>
+
+    <article class="card">
+        <h3>Redes Inactivas</h3>
+        <p>{{ redes_inactivas }}</p>
+    </article>
 </div>
 
 <section class="filters">
-    <form action="/buscar" method="GET">
-        <input type="search" id="barra-busqueda" name="q" placeholder="Nombre o C&oacute;digo">
+    <form id="form-busqueda" action="" method="GET">
+        <label for="barra-busqueda">Buscar:</label>
+        <input
+            type="search"
+            id="barra-busqueda"
+            name="q"
+            placeholder="Nombre o Codigo"
+            value="{{ q }}"
+        >
     </form>
 
-    <select name="zonas" id="zona-select">
+    <select name="zona" id="zona-select" form="form-busqueda" onchange="this.form.submit()">
+        <option value="">-- Seleccione una zona --</option>
+        {% for zona in zonas %}
+        <option value="{{ zona.id_zona }}"{% if selected_zona == zona.id_zona %} selected{% endif %}>
+            {{ zona.nombre_zona }}
+            {% if zona.red %}
+                - {{ zona.red.nombre_red }}
+            {% endif %}
+        </option>
+        {% endfor %}
+    </select>
+
+    <select name="estado" id="estado-select" form="form-busqueda" onchange="this.form.submit()">
         <option value="">-- Seleccione un estado --</option>
-        <option value="activo">Activo</option>
-        <option value="inactivo">Inactivo</option>
-        <option value="mantenimiento">Mantenimiento</option>
+        <option value="activo"{% if selected_estado == "activo" %} selected{% endif %}>Activo</option>
+        <option value="inactivo"{% if selected_estado == "inactivo" %} selected{% endif %}>Inactivo</option>
     </select>
 
-    <select name="estados" id="estado-select">
-        <option value="">-- Seleccione una tensi&oacute;n --</option>
-        <option value="tension1">Tensi&oacute;n 1</option>
-        <option value="tension2">Tensi&oacute;n 2</option>
-    </select>
-
-    <button class="submit" type="button">Buscar</button>
-    <button class="reset" type="button">Limpiar</button>
+    <button class="submit" type="submit" form="form-busqueda">Buscar</button>
+    <button class="reset" type="button" id="btnLimpiarFiltros">Limpiar</button>
 </section>
 
-<h3>Redes de Distribuci&oacute;n</h3>
+<h3>Redes Registradas</h3>
 
-<table class="table-tecnicos">
-    <tr>
-        <th>C&oacute;digo</th>
-        <th>Nombre</th>
-        <th>Tensi&oacute;n</th>
-        <th>Luminarias</th>
-        <th>Capacidad</th>
-        <th>Estado</th>
-        <th>Acciones</th>
-    </tr>
-    <tr onclick="mostrarDetalle('Red Norte', 'C&oacute;digo: red-001, Tensi&oacute;n: 220V, Luminarias: 285, Capacidad: 300, Estado: Activo')">
-        <td>red-001</td>
-        <td>Red Norte</td>
-        <td>220V</td>
-        <td>285</td>
-        <td>300</td>
-        <td>Activo</td>
-        <td>
-            <button type="button">Ver</button>
-            <button type="button">Editar</button>
-            <button type="button">Eliminar</button>
-        </td>
-    </tr>
-    <tr onclick="mostrarDetalle('Red Sur', 'C&oacute;digo: red-002, Tensi&oacute;n: 220V, Luminarias: 150, Capacidad: 200, Estado: Inactivo')">
-        <td>red-002</td>
-        <td>Red Sur</td>
-        <td>220V</td>
-        <td>150</td>
-        <td>200</td>
-        <td>Inactivo</td>
-        <td>
-            <button type="button">Ver</button>
-            <button type="button">Editar</button>
-            <button type="button">Eliminar</button>
-        </td>
-    </tr>
-</table>
+<div class="table-wrapper-redes">
+    <table class="table-redes">
+        <thead>
+            <tr>
+                <th>Código</th>
+                <th>Nombre</th>
+                <th>Voltaje</th>
+                <th>Consumo esperado</th>
+                <th>Zona</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            {% for red in redes %}
+            <tr>
+                <td>{{ red.id_red }}</td>
+                <td>{{ red.nombre_red }}</td>
+                <td>{{ red.voltaje }}</td>
+                <td>{{ red.consumo_esperado }}</td>
+
+                <td>
+                    {% for zona in red.zonas %}
+                        {{ zona.nombre_zona }}{% if not forloop.last %}, {% endif %}
+                    {% empty %}
+                        Sin zona
+                    {% endfor %}
+                </td>
+
+                <td>
+                    {% if red.estado_clase == "activo" %}
+                    <span class="badge badge-activo">{{ red.estado }}</span>
+                    {% elif red.estado_clase == "inactivo" %}
+                    <span class="badge badge-inactivo">{{ red.estado }}</span>
+                    {% else %}
+                    <span class="badge badge-warning">{{ red.estado }}</span>
+                    {% endif %}
+                </td>
+
+                <td class="acciones">
+                    <button type="button">Ver</button>
+                    <button type="button">Editar</button>
+                    <button type="button">Estado</button>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td class="empty-state" colspan="7">No hay redes registradas</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div id="contenedorModal" class="modal">
+    <div class="modal-caja">
+        <button type="button" id="cerrarModal" class="cerrar">&times;</button>
+
+        <h2>Agregar Red</h2>
+
+        <form action="#" method="POST" id="formularioModal">
+            {% csrf_token %}
+
+            <label for="nombre_red">Nombre de la Red:</label>
+            <input type="text" id="nombre_red" name="nombre_red" required>
+
+            <label for="voltaje">Voltaje:</label>
+            <input type="number" step="0.01" id="voltaje" name="voltaje" required>
+
+            <label for="consumo_esperado">Consumo Esperado:</label>
+            <input type="number" step="0.01" id="consumo_esperado" name="consumo_esperado" required>
+
+            <button type="submit" class="btn-guardar">Guardar</button>
+        </form>
+    </div>
+</div>
 
 {% include "luminarias/partials/panel_detalle.html" %}
 {% endblock content %}
 
 {% block extra_js %}
 <script src="{% static 'app/js/detalle_panel.js' %}"></script>
+<script src="{% static 'app/js/modal_agregar.js' %}"></script>
 {% endblock extra_js %}
