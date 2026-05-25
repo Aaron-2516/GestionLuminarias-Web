@@ -78,7 +78,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'LumSys',
         'USER': 'postgres',
-        'PASSWORD': 'Gerardo2002',
+        'PASSWORD': 'GR433239',
         'HOST': 'localhost',
         'PORT': '5432',
     

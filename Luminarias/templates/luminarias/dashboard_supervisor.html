@@ -10,5 +10,5 @@
 {% block topbar_title %}Panel del Supervisor{% endblock %}
 
 {% block content %}
-    {% include "luminarias/partials/dashboard_resumen.html" %}
+    {% include "luminarias/partials/dashboard_resumen.html" with mostrar_acciones=True %}
 {% endblock %}

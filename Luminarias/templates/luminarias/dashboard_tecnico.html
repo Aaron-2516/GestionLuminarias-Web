@@ -9,6 +9,61 @@
 
 {% block topbar_title %}Panel del T&eacute;cnico{% endblock %}
 
+{% block topbar_actions %}
+    <a href="#" class="action-btn primary">Nueva Luminaria</a>
+    <a href="#" class="action-btn secondary">Nueva Zona</a>
+    <a href="#" class="action-btn secondary">Nueva Red</a>
+{% endblock %}
+
 {% block content %}
-    {% include "luminarias/partials/dashboard_resumen.html" %}
+    <div class="hero">
+        <div>
+            <h1>Alcald&iacute;a de San Salvador Centro</h1>
+            <p>Sistema inteligente de control de luminarias p&uacute;blicas.</p>
+        </div>
+
+        <div class="hero-logo">
+            <img src="{% static 'app/img/logo2.0.gif' %}" alt="Logo LumSys">
+        </div>
+    </div>
+
+    <div class="cards">
+        {% for metrica in metricas_dashboard %}
+            <div class="card">
+                <div class="card-title">{{ metrica.titulo }}</div>
+                <div class="card-number {{ metrica.clase }}">{{ metrica.valor|default:"0" }}</div>
+
+                {% if metrica.unidad %}
+                    <div class="card-unit">{{ metrica.unidad }}</div>
+                {% endif %}
+            </div>
+        {% endfor %}
+    </div>
+
+    <div class="table-box">
+        <div class="table-title">Consumo por Red</div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Red</th>
+                    <th>Consumo</th>
+                    <th>Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for red in redes_consumo %}
+                    <tr>
+                        <td>{{ red.nombre }}</td>
+                        <td>{{ red.consumo }} kWh</td>
+                        <td class="{{ red.estado_clase }}">{{ red.estado }}</td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="3">No hay redes registradas.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 {% endblock %}
