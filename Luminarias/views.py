@@ -3,6 +3,7 @@ from django.shortcuts import redirect, render
 from django.contrib import messages
 from django.db.models import Q, Count, Max
 from django.contrib.auth.hashers import make_password
+from decimal import Decimal
 import re
 
 from .models import Usuario, Rol, Zona, AsignacionZona, Red, Luminaria, RegistrarLectura 
@@ -265,6 +266,57 @@ def dashboard_tecnico(request):
     )
 
 def agregar_redes(request):
+
+    if request.method == "POST":
+        nombre_red = request.POST.get("nombre_red", "").strip()
+        voltaje = request.POST.get("voltaje", "").strip()
+        consumo_esperado = request.POST.get("consumo_esperado", "").strip()
+
+        if not nombre_red or not voltaje or not consumo_esperado:
+            messages.error(request, "Todos los campos son obligatorios")
+            return redirect("agregar_redes")
+
+        try:
+            voltaje = Decimal(voltaje)
+            consumo_esperado = Decimal(consumo_esperado)
+        except InvalidOperation:
+            messages.error(request, "Voltaje y consumo esperado deben ser números válidos")
+            return redirect("agregar_redes")
+
+        if voltaje <= 0:
+            messages.error(request, "El voltaje debe ser mayor que cero")
+            return redirect("agregar_redes")
+
+        if consumo_esperado < 0:
+            messages.error(request, "El consumo esperado no puede ser negativo")
+            return redirect("agregar_redes")
+
+        ultimo_red = Red.objects.filter(
+            id_red__startswith="RED"
+        ).aggregate(max_id=Max("id_red"))["max_id"]
+
+        if ultimo_red:
+            numero = int(re.search(r"\d+", ultimo_red).group())
+            nuevo_numero = numero + 1
+        else:
+            nuevo_numero = 1
+
+        nuevo_codigo = f"RED{nuevo_numero:03d}"
+
+        while Red.objects.filter(id_red=nuevo_codigo).exists():
+            nuevo_numero += 1
+            nuevo_codigo = f"RED{nuevo_numero:03d}"
+
+        Red.objects.create(
+            id_red=nuevo_codigo,
+            nombre_red=nombre_red,
+            voltaje=voltaje,
+            consumo_esperado=consumo_esperado
+        )
+
+        messages.success(request, "Red agregada correctamente")
+        return redirect("agregar_redes")
+    
     q = request.GET.get("q", "").strip()
     selected_zona = request.GET.get("zona", "").strip()
     selected_estado = request.GET.get("estado", "").strip()
