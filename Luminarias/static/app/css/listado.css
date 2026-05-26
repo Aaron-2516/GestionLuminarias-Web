@@ -65,6 +65,10 @@
     cursor: pointer;
 }
 
+.filters button {
+    padding: 8px 16px;
+}
+
 .filters button,
 .table-tecnicos td button {
     background: var(--accent);
@@ -74,29 +78,145 @@
     cursor: pointer;
 }
 
-.filters button {
-    padding: 8px 16px;
+.filters button,
+.table-redes td button {
+    background: var(--accent);
+    border: none;
+    border-radius: 8px;
+    color: #ffffff;
+    cursor: pointer;
+}
+/* =========================
+   TABLA MEJORADA
+========================= */
+
+.table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    margin-top: 18px;
+    background: #ffffff;
+    border-radius: 12px;
+    border: 1px solid #dbe3ef;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.07);
 }
 
 .table-tecnicos {
-    border-collapse: collapse;
     width: 100%;
+    min-width: 720px;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 13px;
+    color: #334155;
+    background: #ffffff;
 }
 
-.table-tecnicos th,
-.table-tecnicos td {
-    border: 1px solid var(--border);
-    padding: 12px;
-    text-align: left;
+.table-tecnicos thead {
+    background: linear-gradient(135deg, #0f3c78, #1d6fd6);
+    color: #ffffff;
 }
 
 .table-tecnicos th {
-    background: var(--card-bg);
+    padding: 11px 12px;
+    text-align: left;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+    text-transform: uppercase;
+    white-space: nowrap;
+    border: none;
+}
+
+.table-tecnicos th:first-child {
+    border-top-left-radius: 12px;
+}
+
+.table-tecnicos th:last-child {
+    border-top-right-radius: 12px;
+}
+
+.table-tecnicos td {
+    padding: 10px 12px;
+    text-align: left;
+    vertical-align: middle;
+    white-space: nowrap;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.table-tecnicos tbody tr:nth-child(even) {
+    background-color: #f8fafc;
+}
+
+.table-tecnicos tbody tr:nth-child(odd) {
+    background-color: #ffffff;
+}
+
+.table-tecnicos tbody tr {
+    transition: background-color 0.2s ease;
+}
+
+.table-tecnicos tbody tr:hover {
+    background-color: #eaf3ff;
+}
+
+.table-tecnicos tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.table-tecnicos td:first-child {
+    color: #1d4ed8;
+    font-weight: 700;
+}
+
+.table-tecnicos .acciones {
+    display: flex;
+    gap: 6px;
+    align-items: center;
 }
 
 .table-tecnicos td button {
-    margin-right: 8px;
-    padding: 6px 10px;
+    margin-right: 0;
+    padding: 5px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: 20px;
+    background: #e8f1ff;
+    color: #1d4ed8;
+    transition: all 0.2s ease;
+}
+
+.table-tecnicos td button:hover {
+    background: var(--accent);
+    color: #ffffff;
+}
+
+
+/* Estados tipo etiqueta */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 8px;
+}
+
+.badge-activo {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.badge-inactivo {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+/* Texto cuando no hay datos */
+.empty-state {
+    text-align: center;
+    font-size: 13px;
+    padding: 18px;
+    color: #64748b;
 }
 
 .panel-detalle {
@@ -109,9 +229,193 @@
     padding: 16px;
 }
 
-@media (max-width: 600px) {
+@media (max-width: 500s0px) {
     .filters,
     .filters form {
         flex-direction: column;
+    }
+}
+
+@media (max-width: 768px) {
+    .table-tecnicos {
+        font-size: 12px;
+        min-width: 650px;
+    }
+
+    .table-tecnicos th,
+    .table-tecnicos td {
+        padding: 9px 10px;
+    }
+
+    .table-tecnicos td button {
+        font-size: 11px;
+        padding: 5px 8px;
+    }
+
+    .header h2 {
+        font-size: 20px;
+    }
+
+    .filters {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .filters input,
+    .filters select,
+    .filters button {
+        width: 100%;
+    }
+}
+
+/* Estilos para el modal */
+.btn-abrir {
+    padding: 8px 16px;
+    background: var(--accent);
+    border: none;
+    border-radius: 8px;
+    color: #ffffff;
+    cursor: pointer;
+}
+
+.btn-abrir:hover {
+    background: var(--accent-hover);
+}
+
+.modal {
+    display: none !important;
+    position: fixed;
+    z-index: 1000;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    padding: 20px;
+    background-color: rgba(15, 23, 42, 0.55);
+    align-items: center;
+    justify-content: center;
+}
+
+.modal.mostrar {
+    display: flex !important;
+}
+
+.modal-caja {
+    width: 100%;
+    max-width: 460px;
+    background: #ffffff;
+    border-radius: 14px;
+    padding: 24px;
+    box-shadow: 0 20px 45px rgba(15, 23, 42, 0.25);
+    position: relative;
+}
+
+.cerrar {
+    position: absolute;
+    top: 12px;
+    right: 14px;
+    background: transparent;
+    border: none;
+    color: #64748b;
+    cursor: pointer;
+    font-size: 28px;
+    line-height: 1;
+}
+
+.cerrar:hover {
+    color: var(--accent);
+}
+
+.modal-caja h2 {
+    margin-top: 0;
+    margin-bottom: 18px;
+    color: #0f172a;
+}
+
+.modal-caja label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 700;
+    color: #334155;
+}
+
+.modal-caja input {
+    width: 100%;
+    padding: 9px 12px;
+    margin-bottom: 16px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    outline: none;
+}
+
+.modal-caja input:focus {
+    border-color: var(--accent);
+}
+
+.btn-guardar {
+    width: 100%;
+    padding: 10px 16px;
+    background: var(--accent);
+    border: none;
+    border-radius: 8px;
+    color: #ffffff;
+    cursor: pointer;
+    font-weight: 700;
+}
+
+.btn-guardar:hover {
+    background: var(--accent-hover);
+}
+
+/* =========================
+   RESPONSIVE
+========================= */
+
+@media (max-width: 500px) {
+    .modal-caja {
+        max-width: 100%;
+        padding: 20px;
+    }
+}
+
+@media (max-width: 500px) {
+    .filters,
+    .filters form {
+        flex-direction: column;
+    }
+}
+
+@media (max-width: 768px) {
+    .table-tecnicos,
+    .table-redes {
+        font-size: 12px;
+        min-width: 650px;
+    }
+
+    .table-tecnicos th,
+    .table-tecnicos td,
+    .table-redes th,
+    .table-redes td {
+        padding: 9px 10px;
+    }
+
+    .table-tecnicos td button,
+    .table-redes td button {
+        font-size: 11px;
+        padding: 5px 8px;
+    }
+
+    .header h2 {
+        font-size: 20px;
+    }
+
+    .filters {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .filters input,
+    .filters select,
+    .filters button {
+        width: 100%;
     }
 }
