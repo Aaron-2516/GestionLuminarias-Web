@@ -17,7 +17,9 @@
     --success: #16a34a;
     --danger: #dc2626;
     --warning: #f59e0b;
-    --sidebar-width: 240px;
+
+    /* Sidebar más compacto */
+    --sidebar-width: 180px;
 }
 
 body {
@@ -45,36 +47,37 @@ body {
 }
 
 .sidebar-top {
-    padding: 28px 20px;
+    padding: 24px 16px;
 }
 
 .logo {
-    margin-bottom: 35px;
+    margin-bottom: 30px;
 }
 
 .logo h1 {
     color: #ffffff;
-    font-size: 28px;
+    font-size: 24px;
     margin-bottom: 5px;
 }
 
 .logo p {
     color: #cbd5e1;
-    font-size: 12px;
+    font-size: 11px;
 }
 
 .menu {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 8px;
 }
 
 .menu a {
     border-radius: 12px;
     color: #dbeafe;
-    padding: 14px;
+    padding: 11px 12px;
     text-decoration: none;
     transition: 0.2s;
+    font-size: 14px;
 }
 
 .menu a:hover,
@@ -85,14 +88,14 @@ body {
 
 .sidebar-footer {
     border-top: 1px solid rgba(255, 255, 255, 0.08);
-    padding: 20px;
+    padding: 16px;
 }
 
 .user-box {
     align-items: center;
     display: flex;
-    gap: 12px;
-    margin-bottom: 15px;
+    gap: 10px;
+    margin-bottom: 14px;
 }
 
 .avatar {
@@ -101,21 +104,23 @@ body {
     border-radius: 12px;
     color: #ffffff;
     display: flex;
+    font-size: 14px;
     font-weight: 700;
-    height: 42px;
+    height: 38px;
     justify-content: center;
-    width: 42px;
+    width: 38px;
+    flex-shrink: 0;
 }
 
 .user-name {
     color: #ffffff;
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 600;
 }
 
 .user-role {
     color: #cbd5e1;
-    font-size: 12px;
+    font-size: 11px;
 }
 
 .btn {
@@ -124,8 +129,9 @@ body {
     cursor: pointer;
     display: inline-block;
     font-family: "Sora", sans-serif;
+    font-size: 13px;
     font-weight: 600;
-    padding: 10px 16px;
+    padding: 9px 14px;
     text-align: center;
     text-decoration: none;
     transition: 0.2s;
@@ -165,6 +171,7 @@ body {
 .main {
     flex: 1;
     margin-left: var(--sidebar-width);
+    min-width: 0;
 }
 
 .topbar {
@@ -173,7 +180,8 @@ body {
     border-bottom: 1px solid var(--border);
     display: flex;
     justify-content: space-between;
-    padding: 20px 30px;
+    gap: 16px;
+    padding: 18px 26px;
 }
 
 .topbar-title {
@@ -184,18 +192,55 @@ body {
 
 .topbar-actions {
     display: flex;
-    gap: 12px;
+    gap: 10px;
+    flex-wrap: wrap;
 }
 
 .content {
     background: var(--bg);
     min-height: 100vh;
-    padding: 30px;
+    padding: 26px;
+}
+
+/* =========================
+   RESPONSIVE
+========================= */
+
+@media (max-width: 1024px) {
+    :root {
+        --sidebar-width: 190px;
+    }
+
+    .logo h1 {
+        font-size: 22px;
+    }
+
+    .menu a {
+        font-size: 13px;
+        padding: 10px 11px;
+    }
+
+    .content {
+        padding: 22px;
+    }
 }
 
 @media (max-width: 768px) {
     .sidebar {
-        width: 90px;
+        width: 82px;
+    }
+
+    .sidebar-top {
+        padding: 22px 12px;
+    }
+
+    .logo {
+        margin-bottom: 24px;
+    }
+
+    .logo h1 {
+        font-size: 18px;
+        text-align: center;
     }
 
     .logo p,
@@ -204,7 +249,64 @@ body {
         display: none;
     }
 
+    .menu a {
+        display: flex;
+        justify-content: center;
+        padding: 12px 8px;
+    }
+
+    .sidebar-footer {
+        padding: 12px;
+    }
+
+    .user-box {
+        justify-content: center;
+    }
+
+    .btn-danger {
+        font-size: 0;
+        padding: 10px;
+    }
+
+    .btn-danger::after {
+        content: "Salir";
+        font-size: 11px;
+    }
+
     .main {
-        margin-left: 90px;
+        margin-left: 82px;
+    }
+
+    .topbar {
+        align-items: flex-start;
+        flex-direction: column;
+        padding: 16px 20px;
+    }
+
+    .content {
+        padding: 20px;
+    }
+}
+
+@media (max-width: 520px) {
+    .sidebar {
+        width: 70px;
+    }
+
+    .main {
+        margin-left: 70px;
+    }
+
+    .logo h1 {
+        font-size: 15px;
+    }
+
+    .avatar {
+        width: 34px;
+        height: 34px;
+    }
+
+    .content {
+        padding: 16px;
     }
 }

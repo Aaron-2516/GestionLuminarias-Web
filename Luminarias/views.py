@@ -2,7 +2,6 @@ from django.shortcuts import redirect, render
 
 from django.contrib import messages
 from django.db.models import Q, Count, Max
-from django.contrib.auth.hashers import make_password
 from decimal import Decimal
 import re
 
@@ -198,7 +197,72 @@ def agregar_tecnicos(request):
     return render(request, "luminarias/agregar_tecnicos.html", context)
 
 
-dashboard_supervisor = page_view("dashboard_supervisor")
+def dashboard_supervisor(request):
+    redes_consumo = []
+    consumo_total_redes = 0
+
+    for red in Red.objects.prefetch_related("luminarias", "lecturas").order_by("nombre_red"):
+        ultima_lectura = red.lecturas.order_by("-fecha_lectura").first()
+        total_red_luminarias = red.luminarias.count()
+        fallas_red = red.luminarias.filter(estado=False).count()
+        consumo_red = ultima_lectura.consumo_actual if ultima_lectura else red.consumo_esperado
+        consumo_total_redes += consumo_red
+
+        if total_red_luminarias == 0:
+            estado = "Sin luminarias"
+            estado_clase = "warning"
+        elif fallas_red > 0:
+            estado = "Con fallas"
+            estado_clase = "danger"
+        else:
+            estado = "Activa"
+            estado_clase = "success"
+
+        redes_consumo.append({
+            "nombre": red.nombre_red,
+            "consumo": consumo_red,
+            "estado": estado,
+            "estado_clase": estado_clase,
+        })
+
+        total_tecnicos = Usuario.objects.filter(rol_id=2).count()
+
+    context = {
+        "metricas_dashboard": [
+            {
+                "titulo": "Total Luminarias",
+                "valor": Luminaria.objects.count(),
+                "clase": "",
+                "unidad": "",
+            },
+            {
+                "titulo": "Total Redes",
+                "valor": Red.objects.count(),
+                "clase": "success",
+                "unidad": "",
+            },
+            {
+                "titulo": "Total Técnicos",
+                "valor": total_tecnicos,
+                "clase": "info",
+                "unidad": "",
+            },
+            {
+                "titulo": "Consumo Total de Redes",
+                "valor": consumo_total_redes,
+                "clase": "",
+                "unidad": "kWh",
+            },
+        ],
+        "redes_consumo": redes_consumo,
+            
+    }
+
+    return render(
+        request,
+        "luminarias/dashboard_supervisor.html",
+        context
+    )
 
 
 def dashboard_tecnico(request):
@@ -423,6 +487,12 @@ def agregar_redes(request):
 
     return render(request, "luminarias/agregar_redes.html", context)
 
+
+    
+generar_informe = page_view("generar_informe")
+registrar_lecturas = page_view("registrar_lecturas")
+agregar_zonas = page_view("agregar_zonas")
+agregar_luminarias = page_view("agregar_luminarias")
 base = page_view("base")
 base_supervisor = page_view("base_supervisor")
 base_tecnicos = page_view("base_tecnicos")
