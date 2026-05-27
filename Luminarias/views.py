@@ -2,7 +2,6 @@ from django.shortcuts import redirect, render
 
 from django.contrib import messages
 from django.db.models import Q, Count, Max
-from decimal import Decimal
 import re
 
 from .models import Usuario, Rol, Zona, AsignacionZona, Red, Luminaria, RegistrarLectura 
