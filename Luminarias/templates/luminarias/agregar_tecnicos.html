@@ -97,7 +97,7 @@
                 <td>
                     {% for asignacion in tecnico.zonas_asignadas.all %}
                         {{ asignacion.zona.nombre_zona }}
-                        {% if asignacion.zona.red %}
+                        {% if asignacion.zona.red %} - {{ asignacion.zona.red.nombre_red }}
                         {% endif %}
                         {% if not forloop.last %}, {% endif %}
                     {% empty %}
@@ -114,7 +114,6 @@
                 <td class="acciones">
                     <button type="button">Ver</button>
                     <button type="button">Editar</button>
-                    <button type="button">Estado</button>
                 </td>
             </tr>
             {% empty %}
