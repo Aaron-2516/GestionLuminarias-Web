@@ -4,13 +4,13 @@
 {% block title %}Agregar Redes{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'app/css/agregar_redes.css' %}">
+<link rel="stylesheet" href="{% static 'app/css/agregar_redes.css' %}?v=100">
 {% endblock %}
 
 {% block content %}
 <div class="header">
     <h2>Agregar Redes</h2>
-    <button id="abrirModal" class="btn-abrir" type="button">Agregar Red</button>
+    <button id="abrirModalAgregar" class="btn-abrir" type="button">Agregar Red</button>
 </div>
 
 {% if messages %}
@@ -21,6 +21,7 @@
 </div>
 {% endif %}
 
+<!-- Tarjetas Informacion -->
 <div class="cards">
     <article class="card">
         <h3>Total Redes</h3>
@@ -43,6 +44,7 @@
     </article>
 </div>
 
+<!-- Filtros -->
 <section class="filters">
     <form id="form-busqueda" action="" method="GET">
         <label for="barra-busqueda">Buscar:</label>
@@ -61,7 +63,6 @@
         <option value="{{ zona.id_zona }}"{% if selected_zona == zona.id_zona %} selected{% endif %}>
             {{ zona.nombre_zona }}
             {% if zona.red %}
-                - {{ zona.red.nombre_red }}
             {% endif %}
         </option>
         {% endfor %}
@@ -79,6 +80,7 @@
 
 <h3>Redes Registradas</h3>
 
+<!-- Tabla Redes -->
 <div class="table-wrapper-redes">
     <table class="table-redes">
         <thead>
@@ -120,8 +122,24 @@
                 </td>
 
                 <td class="acciones">
-                    <button type="button">Ver</button>
-                    <button type="button">Editar</button>
+                    <form method="GET" class="form-ver-detalle">
+                        <input type="hidden" name="q" value="{{ q }}">
+                        <input type="hidden" name="zona" value="{{ selected_zona }}">
+                        <input type="hidden" name="estado" value="{{ selected_estado }}">
+                        <input type="hidden" name="detalle" value="{{ red.id_red }}">
+                        <button type="submit" class="btn-ver-red">
+                            Ver
+                        </button>
+                    </form>
+                    <button
+                    class="btn-editar"
+                    type="button"
+                    data-id="{{ red.id_red }}"
+                    data-nombre="{{ red.nombre_red }}"
+                    data-voltaje="{{ red.voltaje|floatformat:0 }}"
+                    >
+                    Editar
+                </button>
                 </td>
             </tr>
             {% empty %}
@@ -133,26 +151,150 @@
     </table>
 </div>
 
-<div id="contenedorModal" class="modal">
+<!-- Detalle Red -->
+{% if red_detalle %}
+<section id="detalleRed" class="detalle-red-abajo">
+    <div class="detalle-red-hero">
+        <!-- <div class="detalle-avatar">
+            {{ red_detalle.nombre_red|first }}{{ red_detalle.nombre_red|first }}
+        </div> -->
+
+        <div class="detalle-identidad">
+            <p class="detalle-label">Información de la red</p>
+            <h3>
+                {{ red_detalle.nombre_red }}
+            </h3>
+
+            {% if red_detalle.estado_clase == "activo" %}
+            <span class="detalle-estado activo">{{ red_detalle.estado }}</span>
+            {% elif red_detalle.estado_clase == "inactivo" %}
+            <span class="detalle-estado inactivo">{{ red_detalle.estado }}</span>
+            {% else %}
+            <span class="detalle-estado warning">{{ red_detalle.estado }}</span>
+            {% endif %}
+        </div>
+
+        <form method="GET" class="form-cerrar-detalle">
+            <input type="hidden" name="q" value="{{ q }}">
+            <input type="hidden" name="zona" value="{{ selected_zona }}">
+            <input type="hidden" name="estado" value="{{ selected_estado }}">
+
+            <button type="submit" class="btn-cerrar-detalle">
+                Cerrar
+            </button>
+        </form>
+    </div>
+
+    <div class="detalle-lista">
+        <div class="detalle-fila">
+            <span>Código</span>
+            <strong>{{ red_detalle.id_red }}</strong>
+        </div>
+
+        <div class="detalle-fila">
+            <span>Voltaje</span>
+            <strong>{{ red_detalle.voltaje }}</strong>
+        </div>
+
+        <div class="detalle-fila">
+            <span>Consumo Esperado</span>
+            <strong>{{ red_detalle.consumo_esperado }}</strong>
+        </div>
+
+        <div class="detalle-fila">
+            <span>Zonas</span>
+            <strong>
+                {% for zona in red_detalle.zonas %}
+                    {{ zona.nombre_zona }}{% if not forloop.last %}, {% endif %}
+                {% empty %}
+                    Sin zona
+                {% endfor %}
+            </strong>
+        </div>
+
+    </div>
+</section>
+{% endif %}
+
+<!-- Modal Agregar Red -->
+<div id="contenedorModalAgregar" class="modal">
     <div class="modal-caja">
-        <button type="button" id="cerrarModal" class="cerrar">&times;</button>
+        <button type="button" id="cerrarModalAgregar" class="cerrar">&times;</button>
 
         <h2>Agregar Red</h2>
 
-        <form action="#" method="POST" id="formularioModal">
+        <form method="POST">
             {% csrf_token %}
 
             <label for="nombre_red">Nombre de la Red:</label>
             <input type="text" id="nombre_red" name="nombre_red" required>
 
             <label for="voltaje">Voltaje:</label>
-            <input type="number" step="0.01" id="voltaje" name="voltaje" required>
+            <select id="voltaje" name="voltaje" required>
+                <option value="">-- Seleccione un voltaje --</option>
+                <option value="110">110V</option>
+                <option value="220">220V</option>
+            </select>
 
-            <label for="consumo_esperado">Consumo Esperado:</label>
-            <input type="number" step="0.01" id="consumo_esperado" name="consumo_esperado" required>
+            <label for="zona">Zona:</label>
+            <select id="zona" name="zona" required>
+                <option value="">-- Seleccione una zona --</option>
+                {% for zona in zonas_disponibles %}
+                    <option value="{{ zona.id_zona }}">{{ zona.nombre_zona }}</option>
+                {% endfor %}
+            </select>
 
-            <button type="submit" class="btn-guardar">Guardar</button>
+            <button type="submit" class="btn-guardar">Guardar Red</button>
         </form>
+    </div>
+</div>
+
+<!-- Modal Editar Red -->
+<div id="contenedorModalEditar" class="modal">
+    <div class="modal-caja">
+
+        <button type="button" id="cerrarModalEditar" class="cerrar">
+            &times;
+        </button>
+
+        <h2>Editar Red</h2>
+
+        <form method="POST">
+            {% csrf_token %}
+
+            <input type="hidden" name="editar_id" id="editar_id">
+
+            <label for="editar_nombre_red">
+                Nombre
+                <span class="required">*</span>
+            </label>
+
+            <input
+                type="text"
+                id="editar_nombre_red"
+                name="nombre_red"
+                required
+            >
+
+            <label for="editar_voltaje">
+                Voltaje
+            </label>
+
+            <select
+                id="editar_voltaje"
+                name="voltaje"
+                required
+            >
+                <option value="110">110V</option>
+                <option value="220">220V</option>
+            </select>
+
+            <button type="submit" class="btn-guardar">
+                Actualizar Red
+            </button>
+
+        </form>
+
     </div>
 </div>
 
@@ -160,6 +302,47 @@
 {% endblock content %}
 
 {% block extra_js %}
-<script src="{% static 'app/js/detalle_panel.js' %}"></script>
 <script src="{% static 'app/js/modal_agregar.js' %}"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const btnLimpiarFiltros = document.getElementById("btnLimpiarFiltros");
+    const detalleRed = document.getElementById("detalleRed");
+
+    if (btnLimpiarFiltros) {
+        btnLimpiarFiltros.addEventListener("click", function () {
+            window.location.href = window.location.pathname;
+        });
+    }
+
+    if (detalleRed) {
+        setTimeout(function () {
+            detalleRed.scrollIntoView({
+                behavior: "smooth",
+                block: "start"
+            });
+        }, 150);
+    }
+});
+</script>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+
+    const alerts = document.querySelectorAll(".alert");
+
+    alerts.forEach((alerta) => {
+
+        setTimeout(() => {
+
+            alerta.style.opacity = "0";
+
+            setTimeout(() => {
+                alerta.remove();
+            }, 300);
+
+        }, 3000);
+
+    });
+
+});
+</script>
 {% endblock extra_js %}
