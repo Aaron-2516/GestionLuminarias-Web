@@ -37,7 +37,7 @@ def login_view(request):
             )
 
         request.session["usuario_id"] = usuario.id_usuario
-        request.session["usuario_nombre"] = usuario.nombre_usuario
+        request.session["usuario_nombre"] = f"{usuario.nombre_usuario} {usuario.apellido_usuario}"
         request.session["rol_id"] = usuario.rol_id
 
         if usuario.rol_id == 1:
@@ -473,8 +473,15 @@ def dashboard_supervisor(request):
 def dashboard_tecnico(request):
     redes_consumo = []
     consumo_total_redes = 0
+    usuario_id = request.session.get("usuario_id")
+    redes_asignadas = Red.objects.none()
 
-    for red in Red.objects.prefetch_related("luminarias", "lecturas").order_by("nombre_red"):
+    if usuario_id:
+        redes_asignadas = Red.objects.prefetch_related("luminarias", "lecturas").filter(
+            zonas__tecnicos_asignados__usuario_id=usuario_id
+        ).distinct().order_by("nombre_red")
+
+    for red in redes_asignadas:
         ultima_lectura = red.lecturas.order_by("-fecha_lectura").first()
         total_red_luminarias = red.luminarias.count()
         fallas_red = red.luminarias.filter(estado=False).count()
@@ -498,6 +505,11 @@ def dashboard_tecnico(request):
             "estado_clase": estado_clase,
         })
 
+    zonas_asignadas = Zona.objects.filter(
+        tecnicos_asignados__usuario_id=usuario_id
+    ).order_by("nombre_zona").distinct() if usuario_id else Zona.objects.none()
+    zonas_asignadas_count = zonas_asignadas.count()
+
     context = {
         "metricas_dashboard": [
             {
@@ -513,8 +525,8 @@ def dashboard_tecnico(request):
                 "unidad": "",
             },
             {
-                "titulo": "Total Zonas",
-                "valor": Zona.objects.count(),
+                "titulo": "Zonas Asignadas",
+                "valor": zonas_asignadas_count,
                 "clase": "warning",
                 "unidad": "",
             },
@@ -526,6 +538,7 @@ def dashboard_tecnico(request):
             },
         ],
         "redes_consumo": redes_consumo,
+        "zonas_asignadas": zonas_asignadas,
     }
 
     return render(

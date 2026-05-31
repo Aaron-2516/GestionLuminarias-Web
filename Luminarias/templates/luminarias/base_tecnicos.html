@@ -19,5 +19,5 @@
 {% endblock %}
 
 {% block user_initial %}T{% endblock %}
-{% block user_name %}Técnico{% endblock %}
+{% block user_name %}{{ request.session.usuario_nombre|default:"Técnico" }}{% endblock %}
 {% block user_role %}Operador{% endblock %}

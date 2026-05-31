@@ -13,5 +13,5 @@
 {% endblock %}
 
 {% block user_initial %}S{% endblock %}
-{% block user_name %}Supervisor{% endblock %}
+{% block user_name %}{{ request.session.usuario_nombre|default:"Supervisor" }}{% endblock %}
 {% block user_role %}Administrador{% endblock %}

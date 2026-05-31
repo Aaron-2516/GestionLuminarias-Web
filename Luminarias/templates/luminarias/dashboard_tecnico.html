@@ -7,7 +7,7 @@
 <link rel="stylesheet" href="{% static 'app/css/dashboard.css' %}">
 {% endblock %}
 
-{% block topbar_title %}Panel del Técnico{% endblock %}
+{% block topbar_title %}Panel de {{ request.session.usuario_nombre|default:"Técnico" }}{% endblock %}
 
 {% block topbar_actions %}
     <a href="{% url 'agregar_luminarias' %}" class="action-btn primary">Nueva Luminaria</a>
@@ -38,6 +38,33 @@
                 {% endif %}
             </div>
         {% endfor %}
+    </div>
+
+    <div class="table-box">
+        <div class="table-title">Zonas asignadas</div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Zona</th>
+                    <th>Municipio</th>
+                    <th>Red</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for zona in zonas_asignadas %}
+                    <tr>
+                        <td>{{ zona.nombre_zona }}</td>
+                        <td>{{ zona.municipio.nombre_municipio }}</td>
+                        <td>{{ zona.red.nombre_red }}</td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="3">No tienes zonas asignadas.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 
     <div class="table-box">
