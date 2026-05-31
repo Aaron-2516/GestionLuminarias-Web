@@ -1,10 +1,14 @@
+from django.http import JsonResponse
 from django.shortcuts import redirect, render
+from django.utils import timezone
 
 from django.contrib import messages
-from django.db.models import Q, Count, Max
+from django.db.models import Q, Max, Sum
+from django.db.models.functions import TruncMonth
 import re
+from datetime import date, timedelta
 
-from .models import Usuario, Rol, Zona, AsignacionZona, Red, Luminaria, RegistrarLectura
+from .models import Usuario, Rol, Zona, Municipio, AsignacionZona, Red, Luminaria, RegistrarLectura
 from decimal import Decimal
 
 def page_view(template_name):
@@ -830,10 +834,339 @@ def agregar_redes(request):
         "luminarias/agregar_redes.html",
         context
     )
+
+
+PERIODOS_REPORTE = [
+    {"value": "mes_actual", "label": "Mes actual"},
+    {"value": "mes", "label": "Mes"},
+]
+
+
+#extrae los meses ingresado en la base de datos para sugerirlos en el selector del informe
+def _meses_con_lecturas():
+    return [
+        {
+            "value": mes["mes"].strftime("%Y-%m"),
+            "label": mes["mes"].strftime("%m/%Y"),
+        }
+        for mes in RegistrarLectura.objects.annotate(
+            mes=TruncMonth("fecha_lectura")
+        ).values("mes").distinct().order_by("-mes")
+    ]
+
+
+#calcula el que quiero para el informe, mes actual o algun mes en especifico.
+def _periodo_fechas(periodo, mes=None):
+    hoy = timezone.localdate()
+    fecha_inicio = hoy.replace(day=1)
+
+    if periodo == "mes":
+        try:
+            anio, numero_mes = [int(valor) for valor in mes.split("-")]
+            fecha_inicio = date(anio, numero_mes, 1)
+        except (AttributeError, TypeError, ValueError):
+            pass
+
+    if fecha_inicio.month == 12:
+        siguiente_mes = date(fecha_inicio.year + 1, 1, 1)
+    else:
+        siguiente_mes = date(fecha_inicio.year, fecha_inicio.month + 1, 1)
+
+    return fecha_inicio, siguiente_mes - timedelta(days=1)
+
+#convierte valores numericos  a float 
+def _to_float(value):
+    if value is None:
+        return 0.0
+    return float(value)
+
+#Redondea valores numericos a 2 decimales para el informe
+def _round(value):
+    return round(_to_float(value), 2)
+
+
+def _zona_nombre(red):
+    if not red:
+        return "Sin red"
+    zonas = list(red.zonas.all())
+    if not zonas:
+        return "Sin zona"
+    return ", ".join(zona.nombre_zona for zona in zonas)
+
+
+def _estado_red(red, variacion):
+    total_luminarias = red.luminarias.count()
+    fallas = red.luminarias.filter(estado=False).count()
+
+    if total_luminarias == 0:
+        return "sin_luminarias"
+
+    if fallas > 0 or abs(_to_float(variacion)) >= 10:
+        return "alerta"
+
+    return "ok"
+
+#filtra las lecturas segun el periodo seleccionado y el municipio (si se eligio uno) para generar el informe.
+def _lecturas_filtradas(fecha_inicio, fecha_fin, municipio_id):
+    lecturas = RegistrarLectura.objects.select_related("red").prefetch_related(
+        "red__zonas",
+        "red__luminarias",
+    )
+
+    if fecha_inicio and fecha_fin:
+        lecturas = lecturas.filter(
+            fecha_lectura__gte=fecha_inicio,
+            fecha_lectura__lte=fecha_fin
+        )
+
+    if municipio_id and municipio_id != "todos":
+        lecturas = lecturas.filter(
+            red__zonas__municipio_id=municipio_id
+        ).distinct()
+
+    return lecturas
+
+#calcula consumo total, cantidad de luminarias y variacion promedio.
+def _kpis_desde_rows(rows, kwh_index, lums_index, var_index=None):
+   
+    total_kwh = sum(_to_float(row[kwh_index]) for row in rows)
+    total_lums = sum(int(_to_float(row[lums_index])) for row in rows)
+    variaciones = [
+        _to_float(row[var_index])
+        for row in rows
+        if var_index is not None and row[var_index] not in ("", None)
+    ]
+    variacion = sum(variaciones) / len(variaciones) if variaciones else 0
+
+    return {
+        "kwh": _round(total_kwh),
+        "lums": total_lums,
+        "var": _round(variacion),
+        "varClass": "text-danger" if abs(variacion) >= 10 else "text-success",
+    }
+
+
+def _barras(rows, label_index, value_index):
     
+    max_value = max([_to_float(row[value_index]) for row in rows] or [0])
+    if max_value <= 0:
+        return []
+
+    return [
+        {
+            "label": str(row[label_index]),
+            "val": _round(row[value_index]),
+            "pct": min(100, _round((_to_float(row[value_index]) / max_value) * 100)),
+        }
+        for row in sorted(rows, key=lambda row: _to_float(row[value_index]), reverse=True)[:8]
+    ]
 
 
-generar_informe = page_view("generar_informe")
+def generar_informe(request):
+    
+    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        return JsonResponse({"data": _generar_reporte_data(request)})
+
+    meses_reporte = _meses_con_lecturas()
+    mes_default = (
+        meses_reporte[0]["value"]
+        if meses_reporte
+        else timezone.localdate().strftime("%Y-%m")
+    )
+
+    municipios = [
+        {"id": "todos", "nombre": "Todos los municipios"}
+    ] + [
+        {"id": municipio.id_municipio, "nombre": municipio.nombre_municipio}
+        for municipio in Municipio.objects.order_by("nombre_municipio")
+    ]
+
+    context = {
+        "periodos_reporte": PERIODOS_REPORTE,
+        "periodo_default": "mes_actual",
+        "mes_default": mes_default,
+        "meses_reporte": meses_reporte,
+        "municipios_reporte": municipios,
+        "municipio_default": "todos",
+    }
+
+    return render(
+        request,
+        "luminarias/generar_informe.html",
+        context
+    )
+
+#genera el reporte segun los filtros seleccionados, puede ser por red, luminaria, municipio o zona. 
+def _generar_reporte_data(request):
+   
+    tipo = request.GET.get("tipo", "zona")
+    periodo = request.GET.get("periodo", "mes_actual")
+    mes = request.GET.get("mes", "")
+    municipio_id = request.GET.get("municipio", "todos")
+    fecha_inicio, fecha_fin = _periodo_fechas(periodo, mes)
+    lecturas = _lecturas_filtradas(fecha_inicio, fecha_fin, municipio_id)
+    red_ids_con_lecturas = list(
+        lecturas.exclude(red_id__isnull=True).values_list(
+            "red_id",
+            flat=True
+        ).distinct()
+    )
+
+    if tipo == "red":
+        headers = ["Red", "Zona", "kWh", "Consumo esperado kWh", "Variacion", "Luminarias", "Estado"]
+        rows = []
+
+        redes = Red.objects.filter(
+            id_red__in=red_ids_con_lecturas
+        ).prefetch_related("zonas", "luminarias").order_by("nombre_red")
+
+        if municipio_id and municipio_id != "todos":
+            redes = redes.filter(zonas__municipio_id=municipio_id).distinct()
+
+        for red in redes:
+            lecturas_red = lecturas.filter(red=red)
+            consumo = lecturas_red.aggregate(total=Sum("consumo_actual"))["total"] or Decimal("0")
+            variacion = lecturas_red.order_by("-fecha_lectura").first()
+            variacion_val = variacion.variacion_consumo if variacion else 0
+            luminarias = red.luminarias.count()
+
+            rows.append([
+                red.nombre_red,
+                _zona_nombre(red),
+                _round(consumo),
+                _round(red.consumo_esperado),
+                _round(variacion_val),
+                luminarias,
+                _estado_red(red, variacion_val),
+            ])
+
+        totals = ["Total", "", _round(sum(row[2] for row in rows)), "", "", sum(row[5] for row in rows), ""]
+        kpis = _kpis_desde_rows(rows, 2, 5, 4)
+        barras = _barras(rows, 0, 2)
+
+    elif tipo == "lum":
+        headers = ["Luminaria", "Red", "Zona", "Potencia", "kWh estimado", "Estado"]
+        rows = []
+
+        luminarias = Luminaria.objects.filter(
+            red_id__in=red_ids_con_lecturas
+        ).select_related("red").prefetch_related(
+            "red__zonas",
+            "red__luminarias"
+        ).order_by("id_luminaria")
+
+        if municipio_id and municipio_id != "todos":
+            luminarias = luminarias.filter(red__zonas__municipio_id=municipio_id).distinct()
+
+        consumo_por_red = {
+            item["red_id"]: item["total"] or Decimal("0")
+            for item in lecturas.values("red_id").annotate(total=Sum("consumo_actual"))
+        }
+
+        potencia_por_red = {
+            item["red_id"]: item["total"] or Decimal("0")
+            for item in Luminaria.objects.filter(
+                red_id__in=red_ids_con_lecturas
+            ).values("red_id").annotate(total=Sum("potencia"))
+        }
+
+        for luminaria in luminarias:
+            red = luminaria.red
+            consumo_red = consumo_por_red.get(red.id_red if red else None, Decimal("0"))
+            potencia_total = potencia_por_red.get(red.id_red if red else None, Decimal("0"))
+            consumo_estimado = Decimal("0")
+
+            if potencia_total:
+                consumo_estimado = consumo_red * luminaria.potencia / potencia_total
+
+            rows.append([
+                luminaria.id_luminaria,
+                red.nombre_red if red else "Sin red",
+                _zona_nombre(red),
+                _round(luminaria.potencia),
+                _round(consumo_estimado),
+                "Activa" if luminaria.estado else "Con falla",
+            ])
+
+        totals = ["Total", "", "", _round(sum(row[3] for row in rows)), _round(sum(row[4] for row in rows)), ""]
+        kpis = {"kwh": totals[4], "lums": len(rows), "var": 0, "varClass": ""}
+        barras = _barras(rows, 0, 4)
+
+    elif tipo == "mun":
+        headers = ["Municipio", "Zonas", "Redes", "Luminarias", "kWh", "Variacion"]
+        rows = []
+        municipios = Municipio.objects.filter(
+            zonas__red_id__in=red_ids_con_lecturas
+        ).prefetch_related("zonas__red").distinct().order_by("nombre_municipio")
+
+        if municipio_id and municipio_id != "todos":
+            municipios = municipios.filter(id_municipio=municipio_id)
+
+        for municipio in municipios:
+            zonas = [
+                zona
+                for zona in municipio.zonas.all()
+                if zona.red_id in red_ids_con_lecturas
+            ]
+            red_ids = {zona.red_id for zona in zonas}
+            lecturas_mun = lecturas.filter(red_id__in=red_ids)
+            consumo = lecturas_mun.aggregate(total=Sum("consumo_actual"))["total"] or Decimal("0")
+            ultima = lecturas_mun.order_by("-fecha_lectura").first()
+            luminarias = Luminaria.objects.filter(red_id__in=red_ids).count()
+
+            rows.append([
+                municipio.nombre_municipio,
+                len(zonas),
+                len(red_ids),
+                luminarias,
+                _round(consumo),
+                _round(ultima.variacion_consumo if ultima else 0),
+            ])
+
+        totals = ["Total", sum(row[1] for row in rows), sum(row[2] for row in rows), sum(row[3] for row in rows), _round(sum(row[4] for row in rows)), ""]
+        kpis = _kpis_desde_rows(rows, 4, 3, 5)
+        barras = _barras(rows, 0, 4)
+
+    else:
+        headers = ["Zona", "Municipio", "Red", "kWh", "Luminarias", "Variacion"]
+        rows = []
+        zonas = Zona.objects.filter(
+            red_id__in=red_ids_con_lecturas
+        ).select_related("municipio", "red").prefetch_related(
+            "red__luminarias"
+        ).order_by("nombre_zona")
+
+        if municipio_id and municipio_id != "todos":
+            zonas = zonas.filter(municipio_id=municipio_id)
+
+        for zona in zonas:
+            lecturas_zona = lecturas.filter(red=zona.red) if zona.red else RegistrarLectura.objects.none()
+            consumo = lecturas_zona.aggregate(total=Sum("consumo_actual"))["total"] or Decimal("0")
+            ultima = lecturas_zona.order_by("-fecha_lectura").first()
+            luminarias = zona.red.luminarias.count() if zona.red else 0
+
+            rows.append([
+                zona.nombre_zona,
+                zona.municipio.nombre_municipio if zona.municipio else "Sin municipio",
+                zona.red.nombre_red if zona.red else "Sin red",
+                _round(consumo),
+                luminarias,
+                _round(ultima.variacion_consumo if ultima else 0),
+            ])
+
+        totals = ["Total", "", "", _round(sum(row[3] for row in rows)), sum(row[4] for row in rows), ""]
+        kpis = _kpis_desde_rows(rows, 3, 4, 5)
+        barras = _barras(rows, 0, 3)
+
+    return {
+        "headers": headers,
+        "rows": rows,
+        "totals": totals,
+        "kpis": kpis,
+        "barras": barras,
+    }
+
+
 registrar_lecturas = page_view("registrar_lecturas")
 agregar_zonas = page_view("agregar_zonas")
 agregar_luminarias = page_view("agregar_luminarias")
