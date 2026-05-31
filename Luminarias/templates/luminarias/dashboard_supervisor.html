@@ -7,7 +7,7 @@
 <link rel="stylesheet" href="{% static 'app/css/dashboard.css' %}">
 {% endblock %}
 
-{% block topbar_title %}Panel del Supervisor{% endblock %}
+{% block topbar_title %}Panel de {{ request.session.usuario_nombre|default:"Supervisor" }}{% endblock %}
 
 {% block topbar_actions %}
     <a href="{% url 'agregar_tecnicos' %}" class="action-btn primary">Nueva Tecnico</a>
