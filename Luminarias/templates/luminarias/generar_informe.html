@@ -1,0 +1,132 @@
+{% extends "luminarias/base_supervisor.html" %}
+{% load static %}
+
+{% block title %}Generar Informe{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'app/css/reporte.css' %}">
+{% endblock %}
+
+{% block topbar_title %}Generar Informe{% endblock %}
+
+{% block content %}
+<div class="header">
+<div>
+<h2>Generar Informe</h2>
+<p>Consulta el consumo registrado por periodo, municipio, zona, red o luminaria.</p>
+</div>
+</div>
+
+<section class="report-panel" data-report-url="{% url 'generar_informe' %}">
+<div class="form-grid">
+<div class="form-group">
+<label for="rep-tipo">Tipo de informe</label>
+<select id="rep-tipo">
+<option value="zona">Por zona</option>
+<option value="red">Por red</option>
+<option value="lum">Por luminaria</option>
+<option value="mun">Por municipio</option>
+</select>
+</div>
+
+<div class="form-group">
+<label for="rep-periodo">Periodo</label>
+<select id="rep-periodo">
+{% for periodo in periodos_reporte %}
+<option value="{{ periodo.value }}"{% if periodo.value == periodo_default %} selected{% endif %}>
+{{ periodo.label }}
+</option>
+{% endfor %}
+</select>
+</div>
+
+<div class="form-group hidden" id="rep-mes-group">
+<label for="rep-mes">Mes</label>
+<input id="rep-mes" type="month" value="{{ mes_default }}" list="meses-reporte">
+<datalist id="meses-reporte">
+{% for mes in meses_reporte %}
+<option value="{{ mes.value }}">{{ mes.label }}</option>
+{% endfor %}
+</datalist>
+</div>
+
+<div class="form-group">
+<label for="rep-municipio">Municipio</label>
+<select id="rep-municipio">
+{% for municipio in municipios_reporte %}
+<option value="{{ municipio.id }}"{% if municipio.id == municipio_default %} selected{% endif %}>
+{{ municipio.nombre }}
+</option>
+{% endfor %}
+</select>
+</div>
+</div>
+
+<div class="btn-group">
+<button class="btn btn-primary" id="btn-generar" type="button">Generar reporte</button>
+<button class="btn btn-secondary" id="btn-pdf" type="button" disabled>Descargar PDF</button>
+<button class="btn btn-secondary" id="btn-excel" type="button" disabled>Descargar Excel</button>
+</div>
+</section>
+
+<section class="result-card" id="result-card">
+<div class="empty" id="estado-vacio">
+<div class="empty-icon">R</div>
+<h3>Sin reporte generado</h3>
+<p>Selecciona los parametros y presiona Generar reporte.</p>
+</div>
+
+<div class="loading hidden" id="estado-cargando">
+<div class="spinner"></div>
+<span>Generando reporte...</span>
+</div>
+
+<div id="estado-resultado" class="hidden">
+<div class="result-header">
+<div>
+<h3 id="res-titulo">Informe</h3>
+<p id="res-sub"></p>
+</div>
+<span class="badge badge-activo" id="res-badge">Completado</span>
+</div>
+
+<div class="cards kpi-strip">
+<article class="card">
+<h3>Total kWh</h3>
+<p id="kpi-kwh">0</p>
+</article>
+<article class="card">
+<h3>Luminarias</h3>
+<p id="kpi-lums">0</p>
+</article>
+<article class="card">
+<h3>Variacion</h3>
+<p id="kpi-var">0%</p>
+</article>
+</div>
+
+<div class="bar-section" id="sec-barras" hidden>
+<h3>Distribucion de consumo</h3>
+<div id="barras-cont"></div>
+</div>
+
+<div class="table-wrapper-report">
+<table class="table-reporte" id="rep-tabla">
+<thead id="rep-thead"></thead>
+<tbody id="rep-tbody"></tbody>
+<tfoot id="rep-tfoot"></tfoot>
+</table>
+</div>
+
+<div class="footer-report">
+<span>Generado el <span id="footer-fecha"></span></span>
+<span>Municipio: <span id="footer-municipio"></span></span>
+</div>
+</div>
+</section>
+{% endblock content %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="{% static 'app/js/reporte_supervisor.js' %}"></script>
+{% endblock extra_js %}

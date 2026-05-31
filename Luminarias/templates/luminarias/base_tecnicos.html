@@ -7,17 +7,17 @@
     <a href="{% url 'agregar_redes' %}">
         <span>Redes</span>
     </a>
-    <a href="#">
+    <a href="{% url 'agregar_zonas' %}">
         <span>Zonas</span>
     </a>
-    <a href="#">
+    <a href="{% url 'agregar_luminarias' %}">
         <span>Luminarias</span>
     </a>
-     <a href="#">
+     <a href="{% url 'registrar_lecturas' %}">
         <span>Registrar Lectura</span>
     </a>
 {% endblock %}
 
 {% block user_initial %}T{% endblock %}
-{% block user_name %}T&eacute;cnico{% endblock %}
+{% block user_name %}Técnico{% endblock %}
 {% block user_role %}Operador{% endblock %}
