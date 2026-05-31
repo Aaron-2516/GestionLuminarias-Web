@@ -14,4 +14,8 @@ urlpatterns = [
     path("base/", views.base, name="base"),
     path("base_supervisor/", views.base_supervisor, name="base_supervisor"),
     path("base_tecnicos/", views.base_tecnicos, name="base_tecnicos"),
+    path("generar_informe/", views.generar_informe, name="generar_informe"),
+    path("registrar_lecturas/", views.registrar_lecturas, name="registrar_lecturas"),
+    path("agregar_zonas/", views.agregar_zonas, name="agregar_zonas"),
+    path("agregar_luminarias/", views.agregar_luminarias, name="agregar_luminarias"),
 ]

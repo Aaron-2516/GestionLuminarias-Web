@@ -1,25 +1,25 @@
 {% extends "luminarias/base_tecnicos.html" %}
 {% load static %}
 
-{% block title %}Dashboard T&eacute;cnico{% endblock %}
+{% block title %}Dashboard Técnico{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'app/css/dashboard.css' %}">
 {% endblock %}
 
-{% block topbar_title %}Panel del T&eacute;cnico{% endblock %}
+{% block topbar_title %}Panel del Técnico{% endblock %}
 
 {% block topbar_actions %}
-    <a href="#" class="action-btn primary">Nueva Luminaria</a>
-    <a href="#" class="action-btn secondary">Nueva Zona</a>
-    <a href="#" class="action-btn secondary">Nueva Red</a>
+    <a href="{% url 'agregar_luminarias' %}" class="action-btn primary">Nueva Luminaria</a>
+    <a href="{% url 'agregar_zonas' %}" class="action-btn secondary">Nueva Zona</a>
+    <a href="{% url 'agregar_redes' %}" class="action-btn secondary">Nueva Red</a>
 {% endblock %}
 
 {% block content %}
     <div class="hero">
         <div>
-            <h1>Alcald&iacute;a de San Salvador Centro</h1>
-            <p>Sistema inteligente de control de luminarias p&uacute;blicas.</p>
+            <h1>Alcaldía de San Salvador Centro</h1>
+            <p>Sistema inteligente de control de luminarias públicas.</p>
         </div>
 
         <div class="hero-logo">
@@ -27,7 +27,7 @@
         </div>
     </div>
 
-    <div class="cards">
+    <div class="cards tecnico">
         {% for metrica in metricas_dashboard %}
             <div class="card">
                 <div class="card-title">{{ metrica.titulo }}</div>

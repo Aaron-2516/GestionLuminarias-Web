@@ -4,13 +4,16 @@
 {% block title %}Agregar Técnicos{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'app/css/listado.css' %}">
+<link rel="stylesheet" href="{% static 'app/css/listado.css' %}?v=100">
 {% endblock %}
 
 {% block content %}
+
 <div class="header">
-    <h2>Agregar Tecnicos</h2>
-    <button id="abrirModal" class="btn-abrir" type="button">Agregar Tecnico</button>
+    <h2>Agregar Técnicos</h2>
+    <button id="abrirModalAgregar" class="btn-abrir" type="button">
+        Agregar Técnico
+    </button>
 </div>
 
 {% if messages %}
@@ -21,25 +24,30 @@
 </div>
 {% endif %}
 
+<!-- Tarjetas -->
 <div class="cards">
     <article class="card">
         <h3>Total Técnicos</h3>
         <p>{{ total_tecnicos }}</p>
     </article>
+
     <article class="card">
         <h3>Con zonas asignadas</h3>
         <p>{{ tecnicos_con_zona }}</p>
     </article>
+
     <article class="card">
         <h3>Sin zonas asignadas</h3>
         <p>{{ tecnicos_sin_zona }}</p>
     </article>
+
     <article class="card">
         <h3>Técnicos Inactivos</h3>
         <p>{{ tecnicos_inactivos }}</p>
     </article>
 </div>
 
+<!--Filtros-->
 <section class="filters">
     <form id="form-busqueda" action="" method="GET">
         <label for="barra-busqueda">Buscar:</label>
@@ -52,10 +60,11 @@
         >
     </form>
 
-    <select name="zona" id="zona-select" form="form-busqueda" onchange="this.form.submit()">
+    <select name="zona" id="filtro-zona-select" form="form-busqueda" onchange="this.form.submit()">
         <option value="">-- Seleccione una zona --</option>
+
         {% for zona in zonas %}
-        <option value="{{ zona.id_zona }}"{% if selected_zona == zona.id_zona %} selected{% endif %}>
+        <option value="{{ zona.id_zona }}"{% if selected_zona == zona.id_zona|stringformat:"s" %} selected{% endif %}>
             {{ zona.nombre_zona }}{% if zona.red %} - {{ zona.red.nombre_red }}{% endif %}
         </option>
         {% endfor %}
@@ -67,12 +76,17 @@
         <option value="inactivo"{% if selected_estado == "inactivo" %} selected{% endif %}>Inactivo</option>
     </select>
 
-    <button class="submit" type="submit" form="form-busqueda">Buscar</button>
-    <button class="reset" type="button" id="btnLimpiarFiltros">Limpiar</button>
+    <button class="submit" type="submit" form="form-busqueda">
+        Buscar
+    </button>
+
+    <button class="reset" type="button" id="btnLimpiarFiltros">
+        Limpiar
+    </button>
 </section>
 
+<!--Tabla de Tecnicos-->
 <h3>Técnicos Registrados</h3>
-
 <div class="table-wrapper">
     <table class="table-tecnicos">
         <thead>
@@ -91,19 +105,31 @@
             {% for tecnico in tecnicos %}
             <tr>
                 <td>{{ tecnico.id_usuario }}</td>
-                <td>{{ tecnico.nombre_usuario }} {{ tecnico.apellido_usuario }}</td>
-                <td>{{ tecnico.id_usuario }}@gob.sv</td>
-                <td>{{ tecnico.telefono }}</td>
+
+                <td>
+                    {{ tecnico.nombre_usuario }} {{ tecnico.apellido_usuario }}
+                </td>
+
+                <td>
+                    {{ tecnico.id_usuario }}@gob.sv
+                </td>
+
+                <td>
+                    {{ tecnico.telefono }}
+                </td>
+
                 <td>
                     {% for asignacion in tecnico.zonas_asignadas.all %}
                         {{ asignacion.zona.nombre_zona }}
                         {% if asignacion.zona.red %}
+                            - {{ asignacion.zona.red.nombre_red }}
                         {% endif %}
                         {% if not forloop.last %}, {% endif %}
                     {% empty %}
                         Sin zona
                     {% endfor %}
                 </td>
+
                 <td>
                     {% if tecnico.estado %}
                     <span class="badge badge-activo">Activo</span>
@@ -111,52 +137,274 @@
                     <span class="badge badge-inactivo">Inactivo</span>
                     {% endif %}
                 </td>
+
+                
                 <td class="acciones">
-                    <button type="button">Ver</button>
-                    <button type="button">Editar</button>
-                    <button type="button">Estado</button>
+                    <form method="GET" class="form-ver-detalle">
+                        <input type="hidden" name="q" value="{{ q }}">
+                        <input type="hidden" name="zona" value="{{ selected_zona }}">
+                        <input type="hidden" name="estado" value="{{ selected_estado }}">
+                        <input type="hidden" name="detalle" value="{{ tecnico.id_usuario }}">
+                        <button type="submit" class="btn-ver-tecnico">
+                            Ver
+                        </button>
+                    </form>
+                    <button
+                    class="btn-editar"
+                    type="button"
+                    data-id="{{ tecnico.id_usuario }}"
+                    data-nombre="{{ tecnico.nombre_usuario }}"
+                    data-apellido="{{ tecnico.apellido_usuario }}"
+                    data-telefono="{{ tecnico.telefono }}"
+                    data-estado="{{ tecnico.estado|yesno:'activo,inactivo' }}"
+                    data-zona="{% for asignacion in tecnico.zonas_asignadas.all %}{{ asignacion.zona.id_zona }}{% endfor %}"
+                    >
+                    Editar
+                </button>
                 </td>
             </tr>
+
             {% empty %}
             <tr>
-                <td class="empty-state" colspan="8">No hay técnicos registrados</td>
+                <td class="empty-state" colspan="7">
+                    No hay técnicos registrados
+                </td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
 </div>
+{% if tecnico_detalle %}
+<section id="detalleTecnico" class="detalle-tecnico-abajo">
+    <div class="detalle-tecnico-hero">
+        <!-- <div class="detalle-avatar">
+            {{ tecnico_detalle.nombre_usuario|first }}{{ tecnico_detalle.apellido_usuario|first }}
+        </div> -->
 
-<div id="contenedorModal" class="modal">
+        <div class="detalle-identidad">
+            <p class="detalle-label">Información del técnico</p>
+            <h3>
+                {{ tecnico_detalle.nombre_usuario }} {{ tecnico_detalle.apellido_usuario }}
+            </h3>
+
+            {% if tecnico_detalle.estado %}
+                <span class="detalle-estado activo">Activo</span>
+            {% else %}
+                <span class="detalle-estado inactivo">Inactivo</span>
+            {% endif %}
+        </div>
+
+        <form method="GET" class="form-cerrar-detalle">
+            <input type="hidden" name="q" value="{{ q }}">
+            <input type="hidden" name="zona" value="{{ selected_zona }}">
+            <input type="hidden" name="estado" value="{{ selected_estado }}">
+
+            <button type="submit" class="btn-cerrar-detalle">
+                Cerrar
+            </button>
+        </form>
+    </div>
+
+    <div class="detalle-lista">
+        <div class="detalle-fila">
+            <span>Código</span>
+            <strong>{{ tecnico_detalle.id_usuario }}</strong>
+        </div>
+
+        <div class="detalle-fila">
+            <span>Correo</span>
+            <strong>{{ tecnico_detalle.id_usuario }}@gob.sv</strong>
+        </div>
+
+        <div class="detalle-fila">
+            <span>Teléfono</span>
+            <strong>{{ tecnico_detalle.telefono }}</strong>
+        </div>
+
+        <div class="detalle-fila detalle-fila-zonas">
+            <span>Zona asignada</span>
+
+            <strong>
+                {% for asignacion in tecnico_detalle.zonas_asignadas.all %}
+                    <em>
+                        {{ asignacion.zona.nombre_zona }}
+                        {% if asignacion.zona.red %}
+                            - {{ asignacion.zona.red.nombre_red }}
+                        {% endif %}
+                    </em>
+                {% empty %}
+                    <em>Sin zona</em>
+                {% endfor %}
+            </strong>
+        </div>
+    </div>
+</section>
+{% endif %}
+<!-- Modal Agregar Tecnico  -->
+<div id="contenedorModalAgregar" class="modal">
     <div class="modal-caja">
-        <button type="button" id="cerrarModal" class="cerrar">&times;</button>
+        <button type="button" id="cerrarModalAgregar" class="cerrar">
+            &times;
+        </button>
 
         <h2>Agregar Técnico</h2>
 
         <form method="POST">
             {% csrf_token %}
 
-            <label for="nombre_usuario">Nombre</label>
-            <input type="text" id="nombre_usuario" name="nombre_usuario" required>
+            <label for="nombre_usuario">Nombre<span class="required"> *</span></label>
+            <input
+                type="text"
+                id="nombre_usuario"
+                name="nombre_usuario"
+                required
+            >
 
-            <label for="apellido_usuario">Apellido</label>
-            <input type="text" id="apellido_usuario" name="apellido_usuario" required>
+            <label for="apellido_usuario">Apellido<span class="required"> *</span></label>
+            <input
+                type="text"
+                id="apellido_usuario"
+                name="apellido_usuario"
+                required
+            >
 
-            <label for="telefono">Teléfono</label>
-            <input type="number" id="telefono" name="telefono" required>
+            <label for="telefono">Teléfono<span class="required"> *</span></label>
+            <input
+                type="number"
+                id="telefono"
+                name="telefono"
+                required
+            >
 
-            <label for="contrasena">Contraseña</label>
-            <input type="password" id="contrasena" name="contrasena" required>
+            <label for="zona">Zona<span class="required"> *</span></label>
+            <select name="zona" id="agregar-zona-select">
+                <option value="">-- Seleccione una zona --</option>
+                {% for zona in zonas %}
+                <option value="{{ zona.id_zona }}"{% if selected_zona == zona.id_zona|stringformat:"s" %} selected{% endif %}>
+                    {{ zona.nombre_zona }}{% if zona.red %} - {{ zona.red.nombre_red }}{% endif %}
+                </option>
+                {% endfor %}
+            </select>
 
-            <button type="submit" class="btn-guardar">Guardar Técnico</button>
+            <label for="contrasena">Contraseña<span class="required"> *</span></label>
+            <input
+                type="password"
+                id="contrasena"
+                name="contrasena"
+                required
+            >
+
+            <button type="submit" class="btn-guardar">
+                Guardar Técnico
+            </button>
         </form>
     </div>
 </div>
 
+<!-- Modal Editar Tecnico -->
+<div id="contenedorModalEditar" class="modal">
+    <div class="modal-caja">
+        <button type="button" id="cerrarModalEditar" class="cerrar">
+            &times;
+        </button>
 
-{% include "luminarias/partials/panel_detalle.html" %}
+        <h2>Editar Técnico</h2>
+
+        <form method="POST">
+            {% csrf_token %}
+            <input type="hidden" name="editar_id" id="editar_id">
+
+            <label for="nombre_usuario">Nombre<span class="required">*</span></label>
+            <input
+                type="text"
+                id="editar_nombre_usuario"
+                name="nombre_usuario"
+                required
+            >
+
+            <label for="apellido_usuario">Apellido</label>
+            <input
+                type="text"
+                id="editar_apellido_usuario"
+                name="apellido_usuario"
+                required
+            >
+
+            <label for="telefono">Teléfono</label>
+            <input
+                type="number"
+                id="editar_telefono"
+                name="telefono"
+                required
+            >
+            <label for="estado">Estado</label>
+            <select id="editar_estado" name="estado" required>
+                <option value="activo">Activo</option>
+                <option value="inactivo">Inactivo</option>
+            </select>
+
+            <label for="zona">Zona<span class="required"> *</span></label>
+            <select name="zona" id="editar-zona-select">
+                {% for zona in zonas %}
+                <option value="{{ zona.id_zona }}"{% if selected_zona == zona.id_zona|stringformat:"s" %} selected{% endif %}>
+                    {{ zona.nombre_zona }}{% if zona.red %} - {{ zona.red.nombre_red }}{% endif %}
+                </option>
+                {% endfor %}
+            </select>
+
+            <button type="submit" class="btn-guardar">
+                Actualizar Técnico
+            </button>
+        </form>
+    </div>
+</div>
+
 {% endblock content %}
 
 {% block extra_js %}
-<script src="{% static 'app/js/detalle_panel.js' %}"></script>
-<script src="{% static 'app/js/modal_agregar.js' %}"></script>
+<script src="{% static 'app/js/modal_agregar.js' %}?v3"></script>
+<!--Limpiar Filtros-->
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const btnLimpiarFiltros = document.getElementById("btnLimpiarFiltros");
+    const detalleTecnico = document.getElementById("detalleTecnico");
+
+    if (btnLimpiarFiltros) {
+        btnLimpiarFiltros.addEventListener("click", function () {
+            window.location.href = window.location.pathname;
+        });
+    }
+
+    if (detalleTecnico) {
+        setTimeout(function () {
+            detalleTecnico.scrollIntoView({
+                behavior: "smooth",
+                block: "start"
+            });
+        }, 150);
+    }
+});
+</script>
+<!--Limpiar alerta despues de 3 segundos-->
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+
+    const alerts = document.querySelectorAll(".alert");
+
+    alerts.forEach((alerta) => {
+
+        setTimeout(() => {
+
+            alerta.style.opacity = "0";
+
+            setTimeout(() => {
+                alerta.remove();
+            }, 300);
+
+        }, 3000);
+
+    });
+
+});
+</script>
 {% endblock extra_js %}
