@@ -84,11 +84,8 @@ def cambiar_contrasena(request):
         usuario.contrasena = password_nueva
         usuario.save(update_fields=["contrasena"])
 
-        return render(
-            request,
-            "luminarias/login.html",
-            {"success": "Contrasena actualizada correctamente. Inicia sesion."}
-        )
+        messages.success(request, "Contraseña actualizada correctamente. Inicia sesión.")
+        return redirect("login")
 
     return render(request, "luminarias/cambiar_contrasena.html")
 

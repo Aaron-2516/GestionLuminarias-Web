@@ -56,18 +56,18 @@
 
             {% csrf_token %}
 
+            {% if messages %}
+                {% for message in messages %}
+                    <p class="login-{{ message.tags }}">
+                        {{ message }}
+                    </p>
+                {% endfor %}
+            {% endif %}
+
             {% if error %}
 
             <p class="login-error">
                 {{ error }}
-            </p>
-
-            {% endif %}
-
-            {% if success %}
-
-            <p class="login-success">
-                {{ success }}
             </p>
 
             {% endif %}
