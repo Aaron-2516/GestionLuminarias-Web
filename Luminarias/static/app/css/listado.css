@@ -1,3 +1,14 @@
+:root {
+    --card-bg: #ffffff;
+    --border: #dbe3ef;
+    --accent: #1d4ed8;
+    --accent-hover: #0f3c78;
+}
+
+* {
+    box-sizing: border-box;
+}
+
 .header {
     align-items: center;
     display: flex;
@@ -98,13 +109,10 @@
     border-radius: 12px;
     border: 1px solid #dbe3ef;
     box-shadow: 0 4px 12px rgba(15, 23, 42, 0.07);
-
     max-height: 300px;
     overflow-y: auto;
-
     display: block;
     -webkit-overflow-scrolling: touch;
-
     max-width: 100%;
 }
 
@@ -454,7 +462,7 @@
 ========================= */
 
 .modal {
-    display: none !important;
+    display: none;
     position: fixed;
     z-index: 1000;
     inset: 0;
@@ -467,7 +475,7 @@
 }
 
 .modal.mostrar {
-    display: flex !important;
+    display: flex;
 }
 
 .modal-caja {

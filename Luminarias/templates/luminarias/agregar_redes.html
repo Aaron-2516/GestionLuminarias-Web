@@ -226,17 +226,17 @@
         <form method="POST">
             {% csrf_token %}
 
-            <label for="nombre_red">Nombre de la Red:</label>
-            <input type="text" id="nombre_red" name="nombre_red" required>
+            <label for="nombre_red">Nombre de la Red: <span class="required"> *</span></label>
+            <input type="text" id="nombre_red" name="nombre_red" placeholder="Nombre de la Red"required>
 
-            <label for="voltaje">Voltaje:</label>
+            <label for="voltaje">Voltaje: <span class="required"> *</span></label>
             <select id="voltaje" name="voltaje" required>
                 <option value="">-- Seleccione un voltaje --</option>
                 <option value="110">110V</option>
                 <option value="220">220V</option>
             </select>
 
-            <label for="zona">Zona:</label>
+            <label for="zona">Zona: <span class="required"> *</span></label>
             <select id="zona" name="zona" required>
                 <option value="">-- Seleccione una zona --</option>
                 {% for zona in zonas_disponibles %}
