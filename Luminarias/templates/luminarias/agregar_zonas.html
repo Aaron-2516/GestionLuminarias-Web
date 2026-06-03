@@ -3,11 +3,77 @@
 
 {% block title %}Registrar Zonas{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'app/css/agregar_zona.css' %}?v=100">
+{% endblock %}
 {% block topbar_title %}Registrar Zonas{% endblock %}
 
 {% block content %}
+
 <div class="header">
     <h2>Registrar Zonas</h2>
+    <button id="abrirModdalAgregar" class="btn-abrir" type ="button">Agregar Zona</button>
 </div>
 
+{%if message%}
+    <div class="alerts">
+    {%for message in messages%}
+        <p class="alert alert-{{message.tags}}"> {{message}} </p>
+    {%endfor%}
+    </div>
+{%endif%}
+
+<!-- Tarjetas resumen de zonas-->
+<div class="cards">
+    <article class="card">
+        <h3>Total de Zonas</h3>
+        <p>{{ total_zonas }}</p>
+    </article>
+
+    <article class="card">
+        <h3>Zonas con Luminarias Activas</h3>
+        <p>{{ zonas_con_luminarias_activas }}</p>     
+    </article>
+
+    <article class="card">
+        <h3>Zonas sin Luminarias Activas</h3>
+        <p>{{ zonas_sin_luminarias_activas }}</p>
+    </article>
+
+    <article class="card">
+        <h3>Zonas en Mantenimiento</h3>
+        <p>{{ zonas_en_mantenimiento }}</p>   
+    </article>
+</div>
+
+<!-- Tabla de zonas -->
+<div class="table-wrapper-zonas">
+    <table class="table-zonas">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nombre de la Zona</th>
+                <th>Descripción</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for zona in zonas %}
+            <tr>
+                <td>{{ zona.id_zona }}</td>
+                <td>{{ zona.nombre_zona }}</td>
+                <td>{{ zona.descripcion }}</td>
+                <td class="acciones">
+                    <button class="btn-editar" data-id="{{ zona.id_zona }}">Editar</button>
+                    <button class="btn-eliminar" data-id="{{ zona.id_zona }}">Eliminar</button>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td class="empty-state" colspan="4">No hay zonas registradas</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
 {% endblock content %}

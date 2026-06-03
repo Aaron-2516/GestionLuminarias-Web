@@ -78,9 +78,9 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'lum_sys',
         'USER': 'postgres',
-        'PASSWORD': 'hs23012',
+        'PASSWORD': 'un22001',
         'HOST': 'localhost',
-        'PORT': '5432',
+        'PORT': '5433',
     
 }
 }
@@ -124,3 +124,5 @@ STATIC_URL = '/static/'
 STATICFILES_DIRS = [
     BASE_DIR / "static",
 ]
+
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
