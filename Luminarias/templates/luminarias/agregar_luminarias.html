@@ -3,11 +3,79 @@
 
 {% block title %}Registrar Luminarias{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'app/css/agregar_luminarias.css' %}?v=100">
+{% endblock %}
 {% block topbar_title %}Registrar Luminarias{% endblock %}
 
 {% block content %}
 <div class="header">
     <h2>Registrar Luminarias</h2>
+    <button id="abrirModdalAgregar" class="btn-abrir" type ="button">Agregar Luminaria</button>
+</div>
+
+{%if message%}
+    <div class="alerts">
+    {%for message in messages%}
+        <p class="alert alert-{{message.tags}}"> {{message}} </p>
+    {%endfor%}
+    </div>
+{%endif%}
+
+<!-- Tarjetas resumen de luminarias-->
+<div class="cards">
+    <article class="card">
+        <h3>Total de Luminarias</h3>
+        <p>{{ total_luminarias }}</p>
+    </article>
+
+    <article class="card">
+        <h3>Luminarias Activas</h3>
+        <p>{{ luminarias_activas }}</p>     
+    </article>
+
+    <article class="card">
+        <h3>Luminarias Inactivas</h3>
+        <p>{{ luminarias_inactivas }}</p>
+    </article>
+
+    <article class="card">
+        <h3>Luminarias en Mantenimiento</h3>
+        <p>{{ luminarias_mantenimiento }}</p>   
+    </article>
+
+</div>
+
+<!-- Tabla de luminarias -->
+<div class="table-wrapper-luminarias">
+    <table class="table-luminarias">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Ubicación</th>
+                <th>Estado</th>
+                <th>Tipo de Luminaria</th>
+                <th>Fecha de Instalación</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for luminaria in luminarias %}
+            <tr>
+                <td>{{ luminaria.id }}</td>
+                <td>{{ luminaria.ubicacion }}</td>
+                <td>{{ luminaria.estado }}</td>
+                <td>{{ luminaria.tipo_luminaria }}</td>
+                <td>{{ luminaria.fecha_instalacion }}</td>
+                <td class="acciones"><a href="{% url 'editar_luminaria' luminaria.id %}" class="btn-editar">Editar</a></td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td class="empty-state" colspan="6">No hay luminarias registradas</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 </div>
 
 {% endblock content %}
