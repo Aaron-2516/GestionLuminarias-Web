@@ -51,9 +51,13 @@
     <table class="table-zonas">
         <thead>
             <tr>
-                <th>ID</th>
-                <th>Nombre de la Zona</th>
-                <th>Descripción</th>
+                <th>Código</th>
+                <th>Nombre</th>
+                <th>Tipo</th>
+                <th>Red Asignada</th>
+                <th>N° de Luminarias</th>
+                <th>Consumo</th>
+                <th>Estado</th>
                 <th>Acciones</th>
             </tr>
         </thead>
@@ -63,6 +67,10 @@
                 <td>{{ zona.id_zona }}</td>
                 <td>{{ zona.nombre_zona }}</td>
                 <td>{{ zona.descripcion }}</td>
+                <td>{{ zona.red_asignada }}</td>
+                <td>{{ zona.numero_luminarias }}</td>
+                <td>{{ zona.consumo }}</td>
+                <td>{{ zona.estado }}</td>
                 <td class="acciones">
                     <button class="btn-editar" data-id="{{ zona.id_zona }}">Editar</button>
                     <button class="btn-eliminar" data-id="{{ zona.id_zona }}">Eliminar</button>
