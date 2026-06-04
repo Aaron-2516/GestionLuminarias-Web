@@ -71,6 +71,23 @@ document.addEventListener("DOMContentLoaded", function () {
             asignarValor("editar_nombre_red", this.dataset.nombre);
             asignarValor("editar_voltaje", this.dataset.voltaje);
 
+            // =========================
+            // EDITAR ZONA
+            // =========================
+            asignarValor("editar_nombre_zona", this.dataset.nombre);
+            asignarValor("editar_tipo_zona", this.dataset.tipo);
+            asignarValor("editar_red", this.dataset.red);
+            asignarValor("editar_municipio", this.dataset.municipio);
+
+            // =========================
+            // EDITAR LUMINARIA
+            // =========================
+            asignarValor("editar_potencia", this.dataset.potencia);
+            asignarValor("editar_estado_luminaria", this.dataset.estado);
+            asignarValor("editar_tipo_luminaria", this.dataset.tipo);
+            asignarValor("editar_red_luminaria", this.dataset.red);
+            asignarValor("editar_fecha_instalacion", this.dataset.fecha);
+
             abrirModal(modalEditar);
 
         });

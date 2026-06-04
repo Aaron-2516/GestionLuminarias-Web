@@ -3,6 +3,7 @@ from django.shortcuts import redirect, render
 from django.utils import timezone
 
 from django.contrib import messages
+from django.db import IntegrityError
 from django.db.models import Q, Max, Sum
 from django.db.models.functions import TruncMonth
 import re
@@ -17,6 +18,29 @@ def page_view(template_name):
 
     view._name_ = template_name
     return view
+
+
+def _siguiente_codigo(modelo, prefijo, campo_id):
+    ultimo_codigo = modelo.objects.filter(
+        **{f"{campo_id}__startswith": prefijo}
+    ).aggregate(
+        max_id=Max(campo_id)
+    )["max_id"]
+
+    if ultimo_codigo:
+        coincidencia = re.search(r"\d+", ultimo_codigo)
+        numero = int(coincidencia.group()) if coincidencia else 0
+        siguiente_numero = numero + 1
+    else:
+        siguiente_numero = 1
+
+    codigo = f"{prefijo}{siguiente_numero:03d}"
+
+    while modelo.objects.filter(**{campo_id: codigo}).exists():
+        siguiente_numero += 1
+        codigo = f"{prefijo}{siguiente_numero:03d}"
+
+    return codigo
 
 
 def login_view(request):
@@ -846,6 +870,322 @@ def agregar_redes(request):
     )
 
 
+def agregar_zonas(request):
+    if request.method == "POST":
+        nombre_zona = request.POST.get("nombre_zona", "").strip()
+        tipo_zona = request.POST.get("tipo_zona", "").strip()
+        red_id = request.POST.get("red", "").strip()
+        municipio_id = request.POST.get("municipio", "").strip()
+        editar_id = request.POST.get("editar_id", "").strip()
+        eliminar_id = request.POST.get("eliminar_id", "").strip()
+
+        if eliminar_id:
+            zona = Zona.objects.filter(id_zona=eliminar_id).select_related("red").first()
+
+            if not zona:
+                messages.error(request, "La zona no existe")
+            elif zona.red_id or zona.tecnicos_asignados.exists():
+                messages.error(
+                    request,
+                    "No se puede eliminar la zona porque tiene relaciones asociadas"
+                )
+            else:
+                try:
+                    zona.delete()
+                    messages.success(request, "Zona eliminada correctamente")
+                except IntegrityError:
+                    messages.error(
+                        request,
+                        "No se puede eliminar la zona porque tiene dependencias registradas"
+                    )
+
+            return redirect("agregar_zonas")
+
+        if not nombre_zona or not tipo_zona:
+            messages.error(request, "El nombre y el tipo de la zona son obligatorios")
+            return redirect("agregar_zonas")
+
+        red = None
+        if red_id:
+            red = Red.objects.filter(id_red=red_id).first()
+            if not red:
+                messages.error(request, "La red seleccionada no existe")
+                return redirect("agregar_zonas")
+
+        municipio = None
+        if municipio_id:
+            municipio = Municipio.objects.filter(id_municipio=municipio_id).first()
+            if not municipio:
+                messages.error(request, "El municipio seleccionado no existe")
+                return redirect("agregar_zonas")
+
+        if editar_id:
+            zona = Zona.objects.filter(id_zona=editar_id).first()
+
+            if not zona:
+                messages.error(request, "La zona no existe")
+                return redirect("agregar_zonas")
+
+            zona.nombre_zona = nombre_zona
+            zona.tipo_zona = tipo_zona
+            zona.red = red
+            zona.municipio = municipio
+            zona.save()
+
+            messages.success(request, "Zona actualizada correctamente")
+            return redirect("agregar_zonas")
+
+        nueva_zona = Zona.objects.create(
+            id_zona=_siguiente_codigo(Zona, "ZON", "id_zona"),
+            nombre_zona=nombre_zona,
+            tipo_zona=tipo_zona,
+            red=red,
+            municipio=municipio,
+        )
+
+        messages.success(request, f"Zona {nueva_zona.nombre_zona} agregada correctamente")
+        return redirect("agregar_zonas")
+
+    q = request.GET.get("q", "").strip()
+    selected_tipo = request.GET.get("tipo", "").strip()
+    selected_red = request.GET.get("red", "").strip()
+    selected_municipio = request.GET.get("municipio", "").strip()
+    detalle_id = request.GET.get("detalle", "").strip()
+
+    zonas_query = Zona.objects.select_related(
+        "red",
+        "municipio",
+    ).prefetch_related(
+        "tecnicos_asignados__usuario",
+        "red__luminarias",
+    ).order_by(
+        "id_zona",
+        "nombre_zona"
+    )
+
+    if q:
+        zonas_query = zonas_query.filter(
+            Q(id_zona__icontains=q) |
+            Q(nombre_zona__icontains=q) |
+            Q(tipo_zona__icontains=q) |
+            Q(red__nombre_red__icontains=q) |
+            Q(municipio__nombre_municipio__icontains=q)
+        )
+
+    if selected_tipo:
+        zonas_query = zonas_query.filter(tipo_zona__icontains=selected_tipo)
+
+    if selected_red:
+        zonas_query = zonas_query.filter(red_id=selected_red)
+
+    if selected_municipio:
+        zonas_query = zonas_query.filter(municipio_id=selected_municipio)
+
+    zonas_data = []
+    for zona in zonas_query:
+        luminarias_totales = zona.red.luminarias.count() if zona.red_id else 0
+        luminarias_activas = zona.red.luminarias.filter(estado=True).count() if zona.red_id else 0
+        luminarias_inactivas = zona.red.luminarias.filter(estado=False).count() if zona.red_id else 0
+
+        if not zona.red_id:
+            estado = "Sin red"
+            estado_clase = "warning"
+        elif luminarias_activas > 0 and luminarias_inactivas == 0:
+            estado = "Activa"
+            estado_clase = "activo"
+        elif luminarias_activas > 0:
+            estado = "Con observaciones"
+            estado_clase = "warning"
+        else:
+            estado = "En mantenimiento"
+            estado_clase = "inactivo"
+
+        tecnicos = [
+            f"{asignacion.usuario.nombre_usuario} {asignacion.usuario.apellido_usuario}"
+            for asignacion in zona.tecnicos_asignados.all()
+            if asignacion.usuario
+        ]
+
+        zonas_data.append({
+            "id_zona": zona.id_zona,
+            "nombre_zona": zona.nombre_zona,
+            "tipo_zona": zona.tipo_zona,
+            "red": zona.red,
+            "municipio": zona.municipio,
+            "estado": estado,
+            "estado_clase": estado_clase,
+            "luminarias_totales": luminarias_totales,
+            "luminarias_activas": luminarias_activas,
+            "luminarias_inactivas": luminarias_inactivas,
+            "tecnicos": tecnicos,
+        })
+
+    total_zonas = len(zonas_data)
+    zonas_con_luminarias_activas = sum(1 for zona in zonas_data if zona["luminarias_activas"] > 0)
+    zonas_sin_luminarias_activas = total_zonas - zonas_con_luminarias_activas
+    zonas_en_mantenimiento = sum(1 for zona in zonas_data if zona["estado_clase"] != "activo")
+
+    zona_detalle = None
+    if detalle_id:
+        zona_detalle = next(
+            (zona for zona in zonas_data if zona["id_zona"] == detalle_id),
+            None
+        )
+
+    context = {
+        "zonas": zonas_data,
+        "redes": Red.objects.order_by("nombre_red"),
+        "municipios": Municipio.objects.order_by("nombre_municipio"),
+        "tipos_zona": Zona.objects.order_by("tipo_zona").values_list("tipo_zona", flat=True).distinct(),
+        "q": q,
+        "selected_tipo": selected_tipo,
+        "selected_red": selected_red,
+        "selected_municipio": selected_municipio,
+        "total_zonas": total_zonas,
+        "zonas_con_luminarias_activas": zonas_con_luminarias_activas,
+        "zonas_sin_luminarias_activas": zonas_sin_luminarias_activas,
+        "zonas_en_mantenimiento": zonas_en_mantenimiento,
+        "zona_detalle": zona_detalle,
+        "detalle_id": detalle_id,
+    }
+
+    return render(request, "luminarias/agregar_zonas.html", context)
+
+
+def agregar_luminarias(request):
+    if request.method == "POST":
+        potencia = request.POST.get("potencia", "").strip()
+        estado = request.POST.get("estado", "").strip()
+        tipo = request.POST.get("tipo", "").strip()
+        red_id = request.POST.get("red", "").strip()
+        fecha_instalacion = request.POST.get("fecha_instalacion", "").strip()
+        editar_id = request.POST.get("editar_id", "").strip()
+        eliminar_id = request.POST.get("eliminar_id", "").strip()
+
+        if eliminar_id:
+            luminaria = Luminaria.objects.filter(id_luminaria=eliminar_id).first()
+
+            if not luminaria:
+                messages.error(request, "La luminaria no existe")
+            else:
+                luminaria.delete()
+                messages.success(request, "Luminaria eliminada correctamente")
+
+            return redirect("agregar_luminarias")
+
+        if not potencia or not estado or not tipo or not red_id or not fecha_instalacion:
+            messages.error(request, "Todos los campos son obligatorios")
+            return redirect("agregar_luminarias")
+
+        red = Red.objects.filter(id_red=red_id).first()
+        if not red:
+            messages.error(request, "La red seleccionada no existe")
+            return redirect("agregar_luminarias")
+
+        estado_bool = estado == "activo"
+
+        if editar_id:
+            luminaria = Luminaria.objects.filter(id_luminaria=editar_id).first()
+
+            if not luminaria:
+                messages.error(request, "La luminaria no existe")
+                return redirect("agregar_luminarias")
+
+            luminaria.potencia = Decimal(potencia)
+            luminaria.estado = estado_bool
+            luminaria.tipo = tipo
+            luminaria.red = red
+            luminaria.fecha_instalacion = fecha_instalacion
+            luminaria.save()
+
+            messages.success(request, "Luminaria actualizada correctamente")
+            return redirect("agregar_luminarias")
+
+        luminaria = Luminaria.objects.create(
+            id_luminaria=_siguiente_codigo(Luminaria, "LUM", "id_luminaria"),
+            potencia=Decimal(potencia),
+            estado=estado_bool,
+            tipo=tipo,
+            red=red,
+            fecha_instalacion=fecha_instalacion,
+        )
+
+        messages.success(request, f"Luminaria {luminaria.id_luminaria} agregada correctamente")
+        return redirect("agregar_luminarias")
+
+    q = request.GET.get("q", "").strip()
+    selected_red = request.GET.get("red", "").strip()
+    selected_estado = request.GET.get("estado", "").strip()
+    selected_tipo = request.GET.get("tipo", "").strip()
+    detalle_id = request.GET.get("detalle", "").strip()
+
+    luminarias_query = Luminaria.objects.select_related("red").order_by("id_luminaria")
+
+    if q:
+        luminarias_query = luminarias_query.filter(
+            Q(id_luminaria__icontains=q) |
+            Q(tipo__icontains=q) |
+            Q(red__nombre_red__icontains=q) |
+            Q(potencia__icontains=q)
+        )
+
+    if selected_red:
+        luminarias_query = luminarias_query.filter(red_id=selected_red)
+
+    if selected_tipo:
+        luminarias_query = luminarias_query.filter(tipo__icontains=selected_tipo)
+
+    if selected_estado == "activo":
+        luminarias_query = luminarias_query.filter(estado=True)
+    elif selected_estado == "inactivo":
+        luminarias_query = luminarias_query.filter(estado=False)
+
+    luminarias_data = []
+    for luminaria in luminarias_query:
+        estado_texto = "Activa" if luminaria.estado else "Inactiva"
+        estado_clase = "activo" if luminaria.estado else "inactivo"
+
+        luminarias_data.append({
+            "id_luminaria": luminaria.id_luminaria,
+            "potencia": luminaria.potencia,
+            "estado": luminaria.estado,
+            "estado_texto": estado_texto,
+            "estado_clase": estado_clase,
+            "tipo": luminaria.tipo,
+            "red": luminaria.red,
+            "fecha_instalacion": luminaria.fecha_instalacion,
+        })
+
+    total_luminarias = len(luminarias_data)
+    luminarias_activas = sum(1 for luminaria in luminarias_data if luminaria["estado"])
+    luminarias_inactivas = total_luminarias - luminarias_activas
+    luminarias_sin_red = sum(1 for luminaria in luminarias_data if luminaria["red"] is None)
+
+    luminaria_detalle = None
+    if detalle_id:
+        luminaria_detalle = next(
+            (luminaria for luminaria in luminarias_data if luminaria["id_luminaria"] == detalle_id),
+            None
+        )
+
+    context = {
+        "luminarias": luminarias_data,
+        "redes": Red.objects.order_by("nombre_red"),
+        "q": q,
+        "selected_red": selected_red,
+        "selected_estado": selected_estado,
+        "selected_tipo": selected_tipo,
+        "total_luminarias": total_luminarias,
+        "luminarias_activas": luminarias_activas,
+        "luminarias_inactivas": luminarias_inactivas,
+        "luminarias_mantenimiento": luminarias_sin_red,
+        "luminaria_detalle": luminaria_detalle,
+        "detalle_id": detalle_id,
+    }
+
+    return render(request, "luminarias/agregar_luminarias.html", context)
+
+
 PERIODOS_REPORTE = [
     {"value": "mes_actual", "label": "Mes actual"},
     {"value": "mes", "label": "Mes"},
@@ -1178,8 +1518,6 @@ def _generar_reporte_data(request):
 
 
 registrar_lecturas = page_view("registrar_lecturas")
-agregar_zonas = page_view("agregar_zonas")
-agregar_luminarias = page_view("agregar_luminarias")
 base = page_view("base")
 base_supervisor = page_view("base_supervisor")
 base_tecnicos = page_view("base_tecnicos")

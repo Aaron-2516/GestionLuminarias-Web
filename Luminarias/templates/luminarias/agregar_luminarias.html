@@ -6,23 +6,23 @@
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'app/css/agregar_luminarias.css' %}?v=100">
 {% endblock %}
+
 {% block topbar_title %}Registrar Luminarias{% endblock %}
 
 {% block content %}
 <div class="header">
     <h2>Registrar Luminarias</h2>
-    <button id="abrirModdalAgregar" class="btn-abrir" type ="button">Agregar Luminaria</button>
+    <button id="abrirModalAgregar" class="btn-abrir" type="button">Agregar Luminaria</button>
 </div>
 
-{%if message%}
-    <div class="alerts">
-    {%for message in messages%}
-        <p class="alert alert-{{message.tags}}"> {{message}} </p>
-    {%endfor%}
-    </div>
-{%endif%}
+{% if messages %}
+<div class="alerts">
+    {% for message in messages %}
+    <p class="alert alert-{{ message.tags }}">{{ message }}</p>
+    {% endfor %}
+</div>
+{% endif %}
 
-<!-- Tarjetas resumen de luminarias-->
 <div class="cards">
     <article class="card">
         <h3>Total de Luminarias</h3>
@@ -31,7 +31,7 @@
 
     <article class="card">
         <h3>Luminarias Activas</h3>
-        <p>{{ luminarias_activas }}</p>     
+        <p>{{ luminarias_activas }}</p>
     </article>
 
     <article class="card">
@@ -40,21 +40,58 @@
     </article>
 
     <article class="card">
-        <h3>Luminarias en Mantenimiento</h3>
-        <p>{{ luminarias_mantenimiento }}</p>   
+        <h3>Sin Red Asignada</h3>
+        <p>{{ luminarias_mantenimiento }}</p>
     </article>
-
 </div>
 
-<!-- Tabla de luminarias -->
+<section class="filters">
+    <form id="form-busqueda" action="" method="GET">
+        <label for="barra-busqueda">Buscar:</label>
+        <input
+            type="search"
+            id="barra-busqueda"
+            name="q"
+            placeholder="ID, tipo, potencia o red"
+            value="{{ q }}"
+        >
+    </form>
+
+    <select name="red" id="red-select" form="form-busqueda" onchange="this.form.submit()">
+        <option value="">-- Red asignada --</option>
+        {% for red in redes %}
+        <option value="{{ red.id_red }}"{% if selected_red == red.id_red %} selected{% endif %}>{{ red.nombre_red }}</option>
+        {% endfor %}
+    </select>
+
+    <select name="tipo" id="tipo-select" form="form-busqueda" onchange="this.form.submit()">
+        <option value="">-- Tipo de luminaria --</option>
+        <option value="LED"{% if selected_tipo == "LED" %} selected{% endif %}>LED</option>
+        <option value="Sodio"{% if selected_tipo == "Sodio" %} selected{% endif %}>Sodio</option>
+        <option value="Fluorescente"{% if selected_tipo == "Fluorescente" %} selected{% endif %}>Fluorescente</option>
+    </select>
+
+    <select name="estado" id="estado-select" form="form-busqueda" onchange="this.form.submit()">
+        <option value="">-- Estado --</option>
+        <option value="activo"{% if selected_estado == "activo" %} selected{% endif %}>Activa</option>
+        <option value="inactivo"{% if selected_estado == "inactivo" %} selected{% endif %}>Inactiva</option>
+    </select>
+
+    <button class="submit" type="submit" form="form-busqueda">Buscar</button>
+    <button class="reset" type="button" id="btnLimpiarFiltros">Limpiar</button>
+</section>
+
+<h3>Luminarias Registradas</h3>
+
 <div class="table-wrapper-luminarias">
     <table class="table-luminarias">
         <thead>
             <tr>
                 <th>ID</th>
-                <th>Ubicación</th>
+                <th>Potencia</th>
                 <th>Estado</th>
-                <th>Tipo de Luminaria</th>
+                <th>Tipo</th>
+                <th>Red</th>
                 <th>Fecha de Instalación</th>
                 <th>Acciones</th>
             </tr>
@@ -62,20 +99,218 @@
         <tbody>
             {% for luminaria in luminarias %}
             <tr>
-                <td>{{ luminaria.id }}</td>
-                <td>{{ luminaria.ubicacion }}</td>
-                <td>{{ luminaria.estado }}</td>
-                <td>{{ luminaria.tipo_luminaria }}</td>
+                <td>{{ luminaria.id_luminaria }}</td>
+                <td>{{ luminaria.potencia }}</td>
+                <td>
+                    {% if luminaria.estado_clase == "activo" %}
+                    <span class="badge badge-activo">{{ luminaria.estado_texto }}</span>
+                    {% else %}
+                    <span class="badge badge-inactivo">{{ luminaria.estado_texto }}</span>
+                    {% endif %}
+                </td>
+                <td>{{ luminaria.tipo }}</td>
+                <td>
+                    {% if luminaria.red %}
+                    {{ luminaria.red.nombre_red }}
+                    {% else %}
+                    Sin red
+                    {% endif %}
+                </td>
                 <td>{{ luminaria.fecha_instalacion }}</td>
-                <td class="acciones"><a href="{% url 'editar_luminaria' luminaria.id %}" class="btn-editar">Editar</a></td>
+                <td class="acciones">
+                    <form method="GET" class="form-ver-detalle">
+                        <input type="hidden" name="q" value="{{ q }}">
+                        <input type="hidden" name="red" value="{{ selected_red }}">
+                        <input type="hidden" name="tipo" value="{{ selected_tipo }}">
+                        <input type="hidden" name="estado" value="{{ selected_estado }}">
+                        <input type="hidden" name="detalle" value="{{ luminaria.id_luminaria }}">
+                        <button type="submit" class="btn-ver-luminaria">Ver</button>
+                    </form>
+                    <button
+                        class="btn-editar"
+                        type="button"
+                        data-id="{{ luminaria.id_luminaria }}"
+                        data-potencia="{{ luminaria.potencia }}"
+                        data-estado="{% if luminaria.estado %}activo{% else %}inactivo{% endif %}"
+                        data-tipo="{{ luminaria.tipo }}"
+                        data-red="{% if luminaria.red %}{{ luminaria.red.id_red }}{% endif %}"
+                        data-fecha="{{ luminaria.fecha_instalacion|date:'Y-m-d' }}"
+                    >
+                        Editar
+                    </button>
+                    <form method="POST" class="form-eliminar">
+                        {% csrf_token %}
+                        <input type="hidden" name="eliminar_id" value="{{ luminaria.id_luminaria }}">
+                        <button type="submit" class="btn-eliminar">Eliminar</button>
+                    </form>
+                </td>
             </tr>
             {% empty %}
             <tr>
-                <td class="empty-state" colspan="6">No hay luminarias registradas</td>
+                <td class="empty-state" colspan="7">No hay luminarias registradas</td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
 </div>
 
+{% if luminaria_detalle %}
+<section id="detalleLuminaria" class="detalle-luminaria-abajo">
+    <div class="detalle-luminaria-hero">
+        <div class="detalle-identidad">
+            <p class="detalle-label">Información de la luminaria</p>
+            <h3>{{ luminaria_detalle.id_luminaria }}</h3>
+            {% if luminaria_detalle.estado %}
+            <span class="detalle-estado activo">Activa</span>
+            {% else %}
+            <span class="detalle-estado inactivo">Inactiva</span>
+            {% endif %}
+        </div>
+
+        <form method="GET" class="form-cerrar-detalle">
+            <input type="hidden" name="q" value="{{ q }}">
+            <input type="hidden" name="red" value="{{ selected_red }}">
+            <input type="hidden" name="tipo" value="{{ selected_tipo }}">
+            <input type="hidden" name="estado" value="{{ selected_estado }}">
+            <button type="submit" class="btn-cerrar-detalle">Cerrar</button>
+        </form>
+    </div>
+
+    <div class="detalle-lista">
+        <div class="detalle-fila">
+            <span>Potencia</span>
+            <strong>{{ luminaria_detalle.potencia }}</strong>
+        </div>
+
+        <div class="detalle-fila">
+            <span>Tipo</span>
+            <strong>{{ luminaria_detalle.tipo }}</strong>
+        </div>
+
+        <div class="detalle-fila">
+            <span>Red</span>
+            <strong>
+                {% if luminaria_detalle.red %}
+                {{ luminaria_detalle.red.nombre_red }}
+                {% else %}
+                Sin red
+                {% endif %}
+            </strong>
+        </div>
+
+        <div class="detalle-fila">
+            <span>Fecha de instalación</span>
+            <strong>{{ luminaria_detalle.fecha_instalacion }}</strong>
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<div id="contenedorModalAgregar" class="modal">
+    <div class="modal-caja">
+        <button type="button" id="cerrarModalAgregar" class="cerrar">&times;</button>
+
+        <h2>Agregar Luminaria</h2>
+
+        <form method="POST">
+            {% csrf_token %}
+
+            <label for="potencia">Potencia: <span class="required">*</span></label>
+            <input type="number" step="0.01" min="0" id="potencia" name="potencia" placeholder="Potencia" required>
+
+            <label for="estado">Estado: <span class="required">*</span></label>
+            <select id="estado" name="estado" required>
+                <option value="">-- Seleccione un estado --</option>
+                <option value="activo">Activa</option>
+                <option value="inactivo">Inactiva</option>
+            </select>
+
+            <label for="tipo">Tipo: <span class="required">*</span></label>
+            <input type="text" id="tipo" name="tipo" placeholder="Tipo de luminaria" required>
+
+            <label for="red">Red: <span class="required">*</span></label>
+            <select id="red" name="red" required>
+                <option value="">-- Seleccione una red --</option>
+                {% for red in redes %}
+                <option value="{{ red.id_red }}">{{ red.nombre_red }}</option>
+                {% endfor %}
+            </select>
+
+            <label for="fecha_instalacion">Fecha de instalación: <span class="required">*</span></label>
+            <input type="date" id="fecha_instalacion" name="fecha_instalacion" required>
+
+            <button type="submit" class="btn-guardar">Guardar Luminaria</button>
+        </form>
+    </div>
+</div>
+
+<div id="contenedorModalEditar" class="modal">
+    <div class="modal-caja">
+        <button type="button" id="cerrarModalEditar" class="cerrar">&times;</button>
+
+        <h2>Editar Luminaria</h2>
+
+        <form method="POST">
+            {% csrf_token %}
+            <input type="hidden" name="editar_id" id="editar_id">
+
+            <label for="editar_potencia">Potencia: <span class="required">*</span></label>
+            <input type="number" step="0.01" min="0" id="editar_potencia" name="potencia" required>
+
+            <label for="editar_estado_luminaria">Estado: <span class="required">*</span></label>
+            <select id="editar_estado_luminaria" name="estado" required>
+                <option value="">-- Seleccione un estado --</option>
+                <option value="activo">Activa</option>
+                <option value="inactivo">Inactiva</option>
+            </select>
+
+            <label for="editar_tipo_luminaria">Tipo: <span class="required">*</span></label>
+            <input type="text" id="editar_tipo_luminaria" name="tipo" required>
+
+            <label for="editar_red_luminaria">Red: <span class="required">*</span></label>
+            <select id="editar_red_luminaria" name="red" required>
+                <option value="">-- Seleccione una red --</option>
+                {% for red in redes %}
+                <option value="{{ red.id_red }}">{{ red.nombre_red }}</option>
+                {% endfor %}
+            </select>
+
+            <label for="editar_fecha_instalacion">Fecha de instalación: <span class="required">*</span></label>
+            <input type="date" id="editar_fecha_instalacion" name="fecha_instalacion" required>
+
+            <button type="submit" class="btn-guardar">Actualizar Luminaria</button>
+        </form>
+    </div>
+</div>
 {% endblock content %}
+
+{% block extra_js %}
+<script src="{% static 'app/js/modal_agregar.js' %}"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const btnLimpiarFiltros = document.getElementById("btnLimpiarFiltros");
+    const detalleLuminaria = document.getElementById("detalleLuminaria");
+
+    if (btnLimpiarFiltros) {
+        btnLimpiarFiltros.addEventListener("click", function () {
+            window.location.href = window.location.pathname;
+        });
+    }
+
+    if (detalleLuminaria) {
+        setTimeout(function () {
+            detalleLuminaria.scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 150);
+    }
+});
+
+document.addEventListener("DOMContentLoaded", () => {
+    document.querySelectorAll(".alert").forEach((alerta) => {
+        setTimeout(() => {
+            alerta.style.opacity = "0";
+            setTimeout(() => alerta.remove(), 300);
+        }, 3000);
+    });
+});
+</script>
+{% endblock extra_js %}
