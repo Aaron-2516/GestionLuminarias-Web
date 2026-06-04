@@ -559,3 +559,70 @@
         width: 100%;
     }
 }
+
+.table-luminarias td form {
+    margin: 0;
+}
+
+.btn-ver-luminaria,
+.btn-eliminar {
+    min-width: 72px;
+    padding: 5px 10px;
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 10px;
+    font-weight: 700;
+    transition: all 0.2s ease;
+}
+
+.btn-ver-luminaria {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+
+.btn-ver-luminaria:hover {
+    background: #1d4ed8;
+    color: #ffffff;
+}
+
+.btn-eliminar {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.btn-eliminar:hover {
+    background: #dc2626;
+    color: #ffffff;
+}
+
+.form-ver-detalle,
+.form-eliminar {
+    margin: 0;
+}
+
+@media (max-width: 768px) {
+    .table-luminarias {
+        font-size: 12px;
+        min-width: 760px;
+    }
+
+    .table-luminarias th,
+    .table-luminarias td {
+        padding: 9px 10px;
+    }
+
+    .table-luminarias .acciones {
+        gap: 8px;
+    }
+
+    .detalle-luminarias-hero {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .detalle-fila {
+        grid-template-columns: 1fr;
+        gap: 6px;
+    }
+}
