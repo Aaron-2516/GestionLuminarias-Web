@@ -4,12 +4,12 @@ from django.utils import timezone
 
 from django.contrib import messages
 from django.db import IntegrityError
-from django.db.models import Q, Max, Sum
+from django.db.models import Q, Max, Sum, Count
 from django.db.models.functions import TruncMonth
 import re
 from datetime import date, timedelta
 
-from .models import Usuario, Rol, Zona, Municipio, AsignacionZona, Red, Luminaria, RegistrarLectura
+from .models import Usuario, Rol, Zona, Municipio, AsignacionZona, Red, Luminaria, RegistrarLectura, Crea
 from decimal import Decimal
 
 def page_view(template_name):
@@ -1517,7 +1517,120 @@ def _generar_reporte_data(request):
     }
 
 
-registrar_lecturas = page_view("registrar_lecturas")
+def registrar_lecturas(request):
+    usuario_id = request.session.get("usuario_id")
+    hoy = timezone.localdate()
+
+    redes_disponibles = Red.objects.prefetch_related(
+        "zonas",
+        "luminarias",
+        "lecturas",
+    ).order_by("nombre_red")
+
+    if request.method == "POST":
+        red_id = request.POST.get("red", "").strip()
+        fecha_lectura_raw = request.POST.get("fecha_lectura", "").strip()
+        consumo_actual_raw = request.POST.get("consumo_actual", "").strip()
+
+        if not red_id:
+            messages.error(request, "Debes seleccionar una red.")
+        elif not fecha_lectura_raw:
+            messages.error(request, "Debes indicar la fecha de la lectura.")
+        elif not consumo_actual_raw:
+            messages.error(request, "Debes indicar el consumo actual.")
+        else:
+            red = redes_disponibles.filter(id_red=red_id).first()
+
+            if not red:
+                messages.error(request, "La red seleccionada no está disponible para registrar lecturas.")
+            else:
+                try:
+                    fecha_lectura = date.fromisoformat(fecha_lectura_raw)
+                    consumo_actual = Decimal(consumo_actual_raw)
+                except (ValueError, ArithmeticError):
+                    messages.error(request, "La fecha o el consumo ingresados no son válidos.")
+                else:
+                    lectura_mensual = RegistrarLectura.objects.filter(
+                        red=red,
+                        fecha_lectura__year=fecha_lectura.year,
+                        fecha_lectura__month=fecha_lectura.month,
+                    ).exists()
+
+                    if lectura_mensual:
+                        messages.error(request, "Ya existe una lectura registrada para esta red en ese mes.")
+                    else:
+                        consumo_esperado = red.consumo_esperado or Decimal("0")
+                        if consumo_esperado > 0:
+                            variacion_consumo = ((consumo_actual - consumo_esperado) / consumo_esperado) * Decimal("100")
+                        else:
+                            variacion_consumo = Decimal("0")
+
+                        nueva_lectura = RegistrarLectura.objects.create(
+                            id_lectura=_siguiente_codigo(RegistrarLectura, "LEC", "id_lectura"),
+                            red=red,
+                            fecha_lectura=fecha_lectura,
+                            consumo_actual=consumo_actual,
+                            variacion_consumo=variacion_consumo,
+                        )
+
+                        if usuario_id:
+                            usuario = Usuario.objects.filter(id_usuario=usuario_id).first()
+                            if usuario:
+                                Crea.objects.create(usuario=usuario, lectura=nueva_lectura)
+
+                        messages.success(request, "Lectura registrada correctamente.")
+                        return redirect("registrar_lecturas")
+
+    detalle_id = request.GET.get("detalle", "").strip()
+    red_detalle = None
+
+    if detalle_id:
+        red_detalle = redes_disponibles.filter(id_red=detalle_id).first()
+
+    lecturas = RegistrarLectura.objects.select_related("red").order_by("-fecha_lectura", "-id_lectura")
+
+    total_lecturas = lecturas.count()
+    lecturas_hoy = lecturas.filter(fecha_lectura=hoy).count()
+    total_redes = redes_disponibles.count()
+
+    variacion_total = lecturas.aggregate(total=Sum("variacion_consumo"))["total"] or Decimal("0")
+    promedio_variacion = variacion_total / total_lecturas if total_lecturas else Decimal("0")
+
+    lecturas_recientes = []
+    for lectura in lecturas[:10]:
+        lecturas_recientes.append({
+            "lectura": lectura,
+            "var_clase": "warning" if abs(lectura.variacion_consumo) >= 10 else ("success" if lectura.variacion_consumo < 0 else "danger"),
+        })
+
+    redes_formulario = []
+    for red in redes_disponibles:
+        ultima_lectura = red.lecturas.order_by("-fecha_lectura", "-id_lectura").first()
+        redes_formulario.append({
+            "id_red": red.id_red,
+            "nombre_red": red.nombre_red,
+            "voltaje": red.voltaje,
+            "consumo_esperado": red.consumo_esperado,
+            "ultima_lectura": ultima_lectura.consumo_actual if ultima_lectura else None,
+            "ultima_fecha": ultima_lectura.fecha_lectura if ultima_lectura else None,
+            "variacion_ultima": ultima_lectura.variacion_consumo if ultima_lectura else None,
+            "zonas": list(red.zonas.all()),
+            "total_luminarias": red.luminarias.count(),
+        })
+
+    contexto = {
+        "total_redes": total_redes,
+        "total_lecturas": total_lecturas,
+        "lecturas_hoy": lecturas_hoy,
+        "promedio_variacion": promedio_variacion,
+        "redes_formulario": redes_formulario,
+        "lecturas_recientes": lecturas_recientes,
+        "red_detalle": red_detalle,
+        "fecha_por_defecto": hoy,
+        "red_seleccionada": request.POST.get("red", "").strip() if request.method == "POST" else request.GET.get("red", "").strip(),
+    }
+
+    return render(request, "luminarias/registrar_lecturas.html", contexto)
 base = page_view("base")
 base_supervisor = page_view("base_supervisor")
 base_tecnicos = page_view("base_tecnicos")
