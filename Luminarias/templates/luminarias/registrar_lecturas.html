@@ -3,11 +3,317 @@
 
 {% block title %}Registrar Lecturas{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'app/css/registrar_lecturas.css' %}?v=100">
+{% endblock %}
+
 {% block topbar_title %}Registrar Lecturas{% endblock %}
 
+{% block topbar_actions %}
+    <a href="{% url 'dashboard_tecnico' %}" class="action-btn secondary">Volver al panel</a>
+    <a href="{% url 'agregar_redes' %}" class="action-btn primary">Ver redes</a>
+{% endblock %}
+
 {% block content %}
-<div class="header">
-    <h2>Registrar Lecturas</h2>
+<div class="header lecturas-header">
+    <div>
+        <h2>Registrar Lecturas</h2>
+        <p>Selecciona una red, captura el consumo actual y el sistema calculará la variación automáticamente.</p>
+    </div>
 </div>
 
+{% if messages %}
+<div class="alerts">
+    {% for message in messages %}
+    <p class="alert alert-{{ message.tags }}">{{ message }}</p>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="cards">
+    <article class="card stat-card">
+        <h3>Redes disponibles</h3>
+        <p>{{ total_redes }}</p>
+    </article>
+
+    <article class="card stat-card">
+        <h3>Lecturas registradas</h3>
+        <p>{{ total_lecturas }}</p>
+    </article>
+
+    <article class="card stat-card">
+        <h3>Lecturas de hoy</h3>
+        <p>{{ lecturas_hoy }}</p>
+    </article>
+
+    <article class="card stat-card">
+        <h3>Variación promedio</h3>
+        <p>{{ promedio_variacion|floatformat:2 }}%</p>
+    </article>
+</div>
+
+<div class="lecturas-grid">
+    <section class="panel form-panel">
+        <div class="panel-head">
+            <div>
+                <h3>Nueva lectura</h3>
+                <p>Elige la red para completar la lectura de forma controlada.</p>
+            </div>
+        </div>
+
+        <form method="POST" class="lectura-form" id="lecturaForm">
+            {% csrf_token %}
+
+            <div class="form-grid two-cols">
+                <div class="form-group full-span">
+                    <label for="red">Red</label>
+                    <select id="red" name="red" required>
+                        <option value="">-- Selecciona una red --</option>
+                        {% if redes_formulario %}
+                        {% for red in redes_formulario %}
+                        <option
+                            value="{{ red.id_red }}"
+                            {% if red_seleccionada == red.id_red %}selected{% elif not red_seleccionada and forloop.first %}selected{% endif %}
+                            data-nombre="{{ red.nombre_red }}"
+                            data-voltaje="{{ red.voltaje }}"
+                            data-consumo-esperado="{{ red.consumo_esperado }}"
+                            data-ultima-lectura="{{ red.ultima_lectura|default_if_none:'' }}"
+                            data-ultima-fecha="{{ red.ultima_fecha|date:'d/m/Y' }}"
+                            data-variacion-ultima="{{ red.variacion_ultima|default_if_none:'' }}"
+                            data-zonas="{{ red.zonas_nombres|escape }}"
+                            data-luminarias="{{ red.total_luminarias }}"
+                        >
+                            {{ red.nombre_red }} - {{ red.id_red }}
+                        </option>
+                        {% endfor %}
+                        {% else %}
+                        <option value="" disabled>No hay redes disponibles</option>
+                        {% endif %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="fecha_lectura">Fecha de lectura</label>
+                    <input type="date" id="fecha_lectura" name="fecha_lectura" value="{{ fecha_por_defecto|date:'Y-m-d' }}" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="consumo_actual">Consumo actual</label>
+                    <input type="number" id="consumo_actual" name="consumo_actual" min="0" step="0.01" placeholder="0.00" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="consumo_esperado">Consumo esperado</label>
+                    <input type="text" id="consumo_esperado" readonly>
+                </div>
+
+                <div class="form-group">
+                    <label for="variacion_preview">Variación estimada</label>
+                    <input type="text" id="variacion_preview" readonly>
+                </div>
+
+                <div class="form-group full-span">
+                    <label for="observacion">Observación</label>
+                    <input type="text" id="observacion" readonly value="La variación se calcula automáticamente al guardar.">
+                </div>
+            </div>
+
+            <button type="submit" class="btn-submit">Guardar lectura</button>
+        </form>
+    </section>
+
+    <aside class="panel info-panel">
+        <div class="panel-head">
+            <div>
+                <h3>Resumen de la red</h3>
+                <p>Información clave de la red seleccionada.</p>
+            </div>
+        </div>
+
+        <div class="info-empty" id="infoEmpty">
+            Selecciona una red para ver su detalle.
+        </div>
+
+        <div class="info-card" id="redInfo" hidden>
+            <div class="info-title">
+                <strong id="infoNombre">-</strong>
+                <span id="infoCodigo">-</span>
+            </div>
+
+            <div class="info-list">
+                <div>
+                    <span>Voltaje</span>
+                    <strong id="infoVoltaje">-</strong>
+                </div>
+                <div>
+                    <span>Luminarias</span>
+                    <strong id="infoLuminarias">-</strong>
+                </div>
+                <div>
+                    <span>Zonas</span>
+                    <strong id="infoZonas">-</strong>
+                </div>
+                <div>
+                    <span>Última lectura</span>
+                    <strong id="infoUltimaLectura">-</strong>
+                </div>
+                <div>
+                    <span>Última fecha</span>
+                    <strong id="infoUltimaFecha">-</strong>
+                </div>
+                <div>
+                    <span>Variación anterior</span>
+                    <strong id="infoVariacion">-</strong>
+                </div>
+            </div>
+        </div>
+    </aside>
+</div>
+
+<section class="panel table-panel">
+    <div class="panel-head">
+        <div>
+            <h3>Lecturas recientes</h3>
+            <p>Últimos registros capturados en el sistema.</p>
+        </div>
+    </div>
+
+    <div class="table-wrapper-lecturas">
+        <table class="table-lecturas">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Red</th>
+                    <th>Fecha</th>
+                    <th>Consumo actual</th>
+                    <th>Variación</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in lecturas_recientes %}
+                {% with lectura=item.lectura %}
+                <tr>
+                    <td>{{ lectura.id_lectura }}</td>
+                    <td>{{ lectura.red.nombre_red }}</td>
+                    <td>{{ lectura.fecha_lectura }}</td>
+                    <td>{{ lectura.consumo_actual }}</td>
+                    <td class="var-{{ item.var_clase }}">{{ lectura.variacion_consumo|floatformat:2 }}%</td>
+                    <td>
+                        {% if item.var_clase == "warning" %}
+                        <span class="badge badge-warning">Revisar</span>
+                        {% elif item.var_clase == "success" %}
+                        <span class="badge badge-success">Bajo esperado</span>
+                        {% else %}
+                        <span class="badge badge-danger">Sobre esperado</span>
+                        {% endif %}
+                    </td>
+                    <td class="acciones">
+                        <a href="?detalle={{ lectura.red.id_red }}" class="mini-btn">Ver red</a>
+                    </td>
+                </tr>
+                {% endwith %}
+                {% empty %}
+                <tr>
+                    <td class="empty-state" colspan="7">Todavía no hay lecturas registradas.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+{% if red_detalle %}
+<section class="panel detail-panel">
+    <div class="panel-head">
+        <div>
+            <h3>Detalle de la red</h3>
+            <p>Vista rápida para confirmar datos antes de registrar una nueva lectura.</p>
+        </div>
+    </div>
+
+    <div class="detail-grid">
+        <div>
+            <span>Código</span>
+            <strong>{{ red_detalle.id_red }}</strong>
+        </div>
+        <div>
+            <span>Nombre</span>
+            <strong>{{ red_detalle.nombre_red }}</strong>
+        </div>
+        <div>
+            <span>Voltaje</span>
+            <strong>{{ red_detalle.voltaje }}</strong>
+        </div>
+        <div>
+            <span>Consumo esperado</span>
+            <strong>{{ red_detalle.consumo_esperado }}</strong>
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<script>
+(() => {
+    const redSelect = document.getElementById('red');
+    const consumoInput = document.getElementById('consumo_actual');
+    const consumoEsperadoField = document.getElementById('consumo_esperado');
+    const variacionField = document.getElementById('variacion_preview');
+    const infoEmpty = document.getElementById('infoEmpty');
+    const redInfo = document.getElementById('redInfo');
+    const infoNombre = document.getElementById('infoNombre');
+    const infoCodigo = document.getElementById('infoCodigo');
+    const infoVoltaje = document.getElementById('infoVoltaje');
+    const infoLuminarias = document.getElementById('infoLuminarias');
+    const infoZonas = document.getElementById('infoZonas');
+    const infoUltimaLectura = document.getElementById('infoUltimaLectura');
+    const infoUltimaFecha = document.getElementById('infoUltimaFecha');
+    const infoVariacion = document.getElementById('infoVariacion');
+
+    const formatDecimal = (value) => {
+        const number = Number.parseFloat(value);
+        if (Number.isNaN(number)) {
+            return '--';
+        }
+
+        return number.toFixed(2);
+    };
+
+    const updateInfo = () => {
+        const option = redSelect.selectedOptions[0];
+
+        if (!option || !option.value) {
+            infoEmpty.hidden = false;
+            redInfo.hidden = true;
+            consumoEsperadoField.value = '';
+            variacionField.value = '';
+            return;
+        }
+
+        const consumoEsperado = Number.parseFloat(option.dataset.consumoEsperado || '0');
+        const consumoActual = Number.parseFloat(consumoInput.value || '');
+        const variacion = consumoEsperado > 0 && !Number.isNaN(consumoActual)
+            ? ((consumoActual - consumoEsperado) / consumoEsperado) * 100
+            : null;
+
+        infoEmpty.hidden = true;
+        redInfo.hidden = false;
+        infoNombre.textContent = option.dataset.nombre || '-';
+        infoCodigo.textContent = option.value || '-';
+        infoVoltaje.textContent = `${option.dataset.voltaje || '-'} V`;
+        infoLuminarias.textContent = option.dataset.luminarias || '-';
+        infoZonas.textContent = option.dataset.zonas || '-';
+        infoUltimaLectura.textContent = option.dataset.ultimaLectura || 'Sin registros';
+        infoUltimaFecha.textContent = option.dataset.ultimaFecha || 'Sin registros';
+        infoVariacion.textContent = option.dataset.variacionUltima ? `${formatDecimal(option.dataset.variacionUltima)}%` : 'Sin registros';
+        consumoEsperadoField.value = `${formatDecimal(consumoEsperado)} kWh`;
+        variacionField.value = variacion === null ? '--' : `${formatDecimal(variacion)}%`;
+    };
+
+    redSelect.addEventListener('change', updateInfo);
+    consumoInput.addEventListener('input', updateInfo);
+    updateInfo();
+})();
+</script>
 {% endblock content %}
