@@ -27,6 +27,20 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
+    function marcarCheckboxes(contenedor, nombre, valores) {
+        if (!contenedor) return;
+
+        const lista = valores
+            ? valores.split(",").map(valor => valor.trim())
+            : [];
+
+        contenedor
+            .querySelectorAll(`input[name="${nombre}"]`)
+            .forEach(check => {
+                check.checked = lista.includes(check.value.trim());
+            });
+    }
+
     // ABRIR MODAL AGREGAR
     if (abrirModalAgregar) {
         abrirModalAgregar.addEventListener("click", function () {
@@ -64,6 +78,7 @@ document.addEventListener("DOMContentLoaded", function () {
             asignarValor("editar_telefono", this.dataset.telefono);
             asignarValor("editar_estado", this.dataset.estado);
             asignarValor("editar-zona-select", this.dataset.zona);
+            marcarCheckboxes(modalEditar, "zona_editar", this.dataset.zona);
 
             // =========================
             // EDITAR RED
