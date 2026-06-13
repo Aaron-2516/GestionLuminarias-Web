@@ -63,11 +63,15 @@ def login_view(request):
         request.session["usuario_id"] = usuario.id_usuario
         request.session["usuario_nombre"] = f"{usuario.nombre_usuario} {usuario.apellido_usuario}"
         request.session["rol_id"] = usuario.rol_id
+        request.session["contrasena_temporal"] = password
 
         if usuario.rol_id == 1:
             return redirect("dashboard_supervisor")
 
         if usuario.rol_id == 2:
+            # Detectar si es primer acceso para técnico
+            if usuario.primer_acceso:
+                return redirect("cambiar_contrasena_primer_acceso")
             return redirect("dashboard_tecnico")
 
         return render(
@@ -112,6 +116,68 @@ def cambiar_contrasena(request):
         return redirect("login")
 
     return render(request, "luminarias/cambiar_contrasena.html")
+
+
+def cambiar_contrasena_primer_acceso(request):
+    """Vista especial para cambiar contraseña en primer acceso de técnicos"""
+    usuario_id = request.session.get("usuario_id")
+    contrasena_temporal = request.session.get("contrasena_temporal")
+
+    # Validar que esté autenticado y sea técnico
+    if not usuario_id or request.session.get("rol_id") != 2:
+        return redirect("login")
+
+    if request.method == "POST":
+        password_nueva = request.POST.get("password_nueva", "").strip()
+        confirmar_password = request.POST.get("confirmar_password", "").strip()
+
+        if not password_nueva or not confirmar_password:
+            return render(
+                request,
+                "luminarias/cambiar_contrasena.html",
+                {
+                    "error": "Los campos de contraseña no pueden estar vacíos.",
+                    "primer_acceso": True,
+                    "usuario_id": usuario_id,
+                    "usuario_nombre": request.session.get("usuario_nombre")
+                }
+            )
+
+        if password_nueva != confirmar_password:
+            return render(
+                request,
+                "luminarias/cambiar_contrasena.html",
+                {
+                    "error": "Las contraseñas nuevas no coinciden.",
+                    "primer_acceso": True,
+                    "usuario_id": usuario_id,
+                    "usuario_nombre": request.session.get("usuario_nombre")
+                }
+            )
+
+        try:
+            usuario = Usuario.objects.get(id_usuario=usuario_id)
+            usuario.contrasena = password_nueva
+            usuario.primer_acceso = False
+            usuario.save(update_fields=["contrasena", "primer_acceso"])
+
+            messages.success(request, "Contraseña establecida correctamente.")
+            return redirect("dashboard_tecnico")
+
+        except Usuario.DoesNotExist:
+            return redirect("login")
+
+    context = {
+        "primer_acceso": True,
+        "usuario_id": usuario_id,
+        "usuario_nombre": request.session.get("usuario_nombre")
+    }
+
+    return render(
+        request,
+        "luminarias/cambiar_contrasena.html",
+        context
+    )
 
 
 def cerrar_sesion(request):
@@ -251,7 +317,8 @@ def agregar_tecnicos(request):
                 telefono=telefono,
                 contrasena=contrasena,
                 rol_id=2,
-                estado=True
+                estado=True,
+                primer_acceso=True
             )
 
             # Asignar Zonas
@@ -1229,7 +1296,7 @@ def _meses_con_lecturas():
     ]
 
 
-#calcula el que quiero para el informe, mes actual o algun mes en especifico.
+#calcula el mes que quiero para el informe, mes actual o algun mes en especifico.
 def _periodo_fechas(periodo, mes=None):
     hoy = timezone.localdate()
     fecha_inicio = hoy.replace(day=1)
