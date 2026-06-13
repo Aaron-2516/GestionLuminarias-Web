@@ -26,6 +26,7 @@ class Usuario(models.Model):
     apellido_usuario = models.CharField(max_length=50)
     telefono = models.IntegerField()
     estado = models.BooleanField(default=True)
+    primer_acceso = models.BooleanField(default=True)
 
     class Meta:
         db_table = "usuario"
