@@ -118,51 +118,68 @@ def cerrar_sesion(request):
     request.session.flush()
     return redirect("login")
 
+
 def agregar_tecnicos(request):
     abrir_modal = None
 
-    # Agregar \ Editar Tecnico
+    # Agregar / Editar Tecnico / Eliminar Tecnico
     if request.method == "POST":
-        nombre = request.POST.get(
-            "nombre_usuario",
-            ""
-        ).strip()
+        nombre = request.POST.get("nombre_usuario", "").strip()
+        apellido = request.POST.get("apellido_usuario", "").strip()
+        telefono = request.POST.get("telefono", "").strip()
+        contrasena = request.POST.get("contrasena", "").strip()
+        editar_id = request.POST.get("editar_id", "").strip()
+        eliminar_id = request.POST.get("eliminar_id", "").strip()
+        estado = request.POST.get("estado", "").strip()
 
-        apellido = request.POST.get(
-            "apellido_usuario",
-            ""
-        ).strip()
+        zona_ids = []
+        if editar_id:
+            zona_ids = request.POST.getlist("zona_editar")
+        # else:
+        #     zona_ids = request.POST.getlist(
+        #         "zona_agregar"
+        #     )
 
-        telefono = request.POST.get(
-            "telefono",
-            ""
-        ).strip()
+        # Eliminar Tecnico
+        if eliminar_id:
+            tecnico = Usuario.objects.filter(
+                id_usuario=eliminar_id,
+                rol_id=2
+            ).first()
 
-        contrasena = request.POST.get(
-            "contrasena",
-            ""
-        ).strip()
+            if not tecnico:
+                messages.error(
+                    request,
+                    "El técnico no existe"
+                )
+            elif tecnico.zonas_asignadas.exists():
+                messages.error(
+                    request,
+                    f"No se puede eliminar el técnico {tecnico.nombre_usuario} {tecnico.apellido_usuario} porque tiene zonas asignadas"
+                )
+            else:
+                try:
+                    tecnico.delete()
+                    messages.success(
+                        request,
+                        f"Técnico eliminado {tecnico.nombre_usuario} {tecnico.apellido_usuario} correctamente"
+                    )
+                except IntegrityError:
+                    messages.error(
+                        request,
+                        f"No se puede eliminar el técnico {tecnico.nombre_usuario} {tecnico.apellido_usuario} porque tiene dependencias registradas"
+                    )
 
-        editar_id = request.POST.get(
-            "editar_id"
-        )
-
-        estado = request.POST.get(
-            "estado"
-        )
-
-        zona_id = request.POST.get(
-            "zona"
-        )
+            return redirect(
+                "agregar_tecnicos"
+            )
 
         # Validar Telefono
         if not telefono.isdigit() or len(telefono) != 8:
-
             messages.error(
                 request,
                 "El teléfono debe contener exactamente 8 dígitos"
             )
-
             abrir_modal = (
                 "editar"
                 if editar_id
@@ -171,28 +188,23 @@ def agregar_tecnicos(request):
 
         # Editar Tecnico
         elif editar_id:
-
             tecnico = Usuario.objects.filter(
                 id_usuario=editar_id,
                 rol_id=2
             ).first()
 
             if tecnico:
-
                 nuevo_estado = estado == "activo"
-
                 tiene_zonas = tecnico.zonas_asignadas.exists()
 
                 # Validar Desactivar
                 if not nuevo_estado and tiene_zonas:
-
                     messages.error(
                         request,
                         "No se puede desactivar el técnico porque tiene zonas asignadas"
                     )
 
                     abrir_modal = "editar"
-
                 else:
                     tecnico.nombre_usuario = nombre
                     tecnico.apellido_usuario = apellido
@@ -202,68 +214,35 @@ def agregar_tecnicos(request):
                     # Actualizar Zona
                     tecnico.zonas_asignadas.all().delete()
 
-                    if zona_id:
-
+                    for zona_id in zona_ids:
                         AsignacionZona.objects.create(
                             usuario=tecnico,
                             zona_id=zona_id
                         )
 
                     tecnico.save()
-
                     messages.success(
                         request,
-                        "Técnico actualizado correctamente"
+                        f"Técnico {tecnico.nombre_usuario} {tecnico.apellido_usuario} actualizado correctamente"
                     )
 
                     return redirect(
                         "agregar_tecnicos"
                     )
-
             else:
-
                 messages.error(
                     request,
                     "El técnico no existe"
                 )
-
                 abrir_modal = "editar"
 
-        # Agregar Nuevo Tecnico
+        # Agregar Nuevo Tecnico FORMATO ID USR001, USR002, etc
         else:
-
-            ultimo_usuario = Usuario.objects.filter(
-                id_usuario__startswith="USR"
-            ).aggregate(
-                max_id=Max("id_usuario")
-            )["max_id"]
-
-            #Formato para seguir el id de tecnico
-            if ultimo_usuario:
-
-                numero = int(
-                    re.search(
-                        r"\d+",
-                        ultimo_usuario
-                    ).group()
-                )
-
-                nuevo_numero = numero + 1
-
-            else:
-                nuevo_numero = 1
-
-            nuevo_codigo = f"USR{nuevo_numero:03d}"
-
-            while Usuario.objects.filter(
-                id_usuario=nuevo_codigo
-            ).exists():
-
-                nuevo_numero += 1
-
-                nuevo_codigo = (
-                    f"USR{nuevo_numero:03d}"
-                )
+            nuevo_codigo = _siguiente_codigo(
+                Usuario,
+                "USR",
+                "id_usuario"
+            )
 
             tecnico = Usuario.objects.create(
                 id_usuario=nuevo_codigo,
@@ -276,60 +255,38 @@ def agregar_tecnicos(request):
             )
 
             # Asignar Zonas
-            if zona_id:
-
-                AsignacionZona.objects.create(
-                    usuario=tecnico,
-                    zona_id=zona_id
-                )
+            if zona_ids:
+                for zona_id in zona_ids:
+                    AsignacionZona.objects.create(
+                        usuario=tecnico,
+                        zona_id=zona_id
+                    )
 
             messages.success(
                 request,
-                "Técnico agregado correctamente"
+                f"Técnico {tecnico.nombre_usuario} {tecnico.apellido_usuario} agregado correctamente"
             )
 
             return redirect(
                 "agregar_tecnicos"
             )
 
-    # Filtrar Tecnicos
-    q = request.GET.get(
-        "q",
-        ""
-    ).strip()
-
-    selected_zona = request.GET.get(
-        "zona",
-        ""
-    ).strip()
-
-    selected_estado = request.GET.get(
-        "estado",
-        ""
-    ).strip()
-
-    detalle_id = request.GET.get(
-        "detalle",
-        ""
-    ).strip()
-
-    rol_tecnico = Rol.objects.filter(
-        roles__icontains="tecnico"
-    ).first()
+    # Obtener tecnicos en tabla
+    q = request.GET.get("q", "").strip()
+    selected_zona = request.GET.get("zona", "").strip()
+    selected_estado = request.GET.get("estado", "").strip()
+    detalle_id = request.GET.get("detalle", "").strip()
+    rol_tecnico = Rol.objects.filter(roles__icontains="tecnico").first()
 
     if rol_tecnico:
-
         tecnicos = Usuario.objects.filter(
             rol_id=2
         )
-
     else:
-
         tecnicos = Usuario.objects.none()
 
     # Busqueda
     if q:
-
         tecnicos = tecnicos.filter(
             Q(id_usuario__icontains=q) |
             Q(nombre_usuario__icontains=q) |
@@ -339,20 +296,16 @@ def agregar_tecnicos(request):
 
     # Filtro Estado
     if selected_estado == "activo":
-
         tecnicos = tecnicos.filter(
             estado=True
         )
-
     elif selected_estado == "inactivo":
-
         tecnicos = tecnicos.filter(
             estado=False
         )
 
     # Filtro Zona
     if selected_zona:
-
         tecnicos = tecnicos.filter(
             zonas_asignadas__zona__id_zona=selected_zona
         )
@@ -364,28 +317,24 @@ def agregar_tecnicos(request):
         "nombre_usuario",
         "apellido_usuario"
     )
-
     zonas = Zona.objects.select_related(
         "red"
     ).all().order_by(
         "nombre_zona"
     )
 
-    # Carda
+    # Cards
     total_tecnicos = Usuario.objects.filter(
         rol_id=2
     ).count() if rol_tecnico else 0
-
     tecnicos_con_zona = Usuario.objects.filter(
         rol_id=2,
         zonas_asignadas__isnull=False
     ).distinct().count() if rol_tecnico else 0
-
     tecnicos_sin_zona = Usuario.objects.filter(
         rol_id=2,
         zonas_asignadas__isnull=True
     ).count() if rol_tecnico else 0
-
     tecnicos_inactivos = Usuario.objects.filter(
         rol_id=2,
         estado=False
@@ -393,9 +342,7 @@ def agregar_tecnicos(request):
 
     # Detalle Tecnico
     tecnico_detalle = None
-
     if detalle_id:
-
         tecnico_detalle = Usuario.objects.prefetch_related(
             "zonas_asignadas__zona__red"
         ).filter(
@@ -424,23 +371,53 @@ def agregar_tecnicos(request):
         context
     )
 
+
 def dashboard_supervisor(request):
     redes_consumo = []
-    consumo_total_redes = 0
+    zonas_estado = []
 
-    for red in Red.objects.prefetch_related("luminarias", "lecturas").order_by("nombre_red"):
-        ultima_lectura = red.lecturas.order_by("-fecha_lectura").first()
+    consumo_total_redes = 0
+    total_tecnicos = Usuario.objects.filter(
+        rol_id=2
+    ).count()
+    # =========================
+    # CONSUMO POR RED
+    # =========================
+
+    redes = Red.objects.prefetch_related(
+        "luminarias",
+        "lecturas"
+    ).order_by(
+        "id_red"
+    )
+
+    for red in redes:
+        ultima_lectura = red.lecturas.order_by(
+            "-fecha_lectura"
+        ).first()
+
         total_red_luminarias = red.luminarias.count()
-        fallas_red = red.luminarias.filter(estado=False).count()
-        consumo_red = ultima_lectura.consumo_actual if ultima_lectura else red.consumo_esperado
+
+        fallas_red = red.luminarias.filter(
+            estado=False
+        ).count()
+
+        consumo_red = (
+            ultima_lectura.consumo_actual
+            if ultima_lectura
+            else red.consumo_esperado
+        )
+
         consumo_total_redes += consumo_red
 
         if total_red_luminarias == 0:
             estado = "Sin luminarias"
             estado_clase = "warning"
+
         elif fallas_red > 0:
             estado = "Con fallas"
             estado_clase = "danger"
+
         else:
             estado = "Activa"
             estado_clase = "success"
@@ -452,26 +429,79 @@ def dashboard_supervisor(request):
             "estado_clase": estado_clase,
         })
 
-        total_tecnicos = Usuario.objects.filter(rol_id=2).count()
+    # =========================
+    # ESTADO POR ZONA
+    # =========================
+
+    zonas = Zona.objects.all().order_by(
+        "id_zona",
+    )
+
+    for zona in zonas:
+        redes_zona = Red.objects.filter(
+            zonas=zona
+        ).prefetch_related(
+            "luminarias"
+        )
+
+        total_redes_zona = redes_zona.count()
+        total_luminarias_zona = 0
+        fallas_zona = 0
+
+        for red in redes_zona:
+            total_luminarias_zona += red.luminarias.count()
+
+            fallas_zona += red.luminarias.filter(
+                estado=False
+            ).count()
+
+        if total_redes_zona == 0:
+            estado = "Sin redes"
+            estado_clase = "warning"
+
+        elif total_luminarias_zona == 0:
+            estado = "Sin luminarias"
+            estado_clase = "warning"
+
+        elif fallas_zona > 0:
+            estado = "Con fallas"
+            estado_clase = "danger"
+
+        else:
+            estado = "Activa"
+            estado_clase = "success"
+
+        zonas_estado.append({
+            "nombre": zona.nombre_zona,
+            "luminarias": total_luminarias_zona,
+            "estado": estado,
+            "estado_clase": estado_clase,
+        })
 
     context = {
         "metricas_dashboard": [
             {
-                "titulo": "Total Luminarias",
-                "valor": Luminaria.objects.count(),
+                "titulo": "Total Técnicos",
+                "valor": total_tecnicos,
+                "clase": "",
+                "unidad": "",
+            },
+            {
+                "titulo": "Total Zonas",
+                "valor": Zona.objects.count(),
                 "clase": "",
                 "unidad": "",
             },
             {
                 "titulo": "Total Redes",
                 "valor": Red.objects.count(),
-                "clase": "success",
+                "clase": "",
                 "unidad": "",
             },
             {
-                "titulo": "Total Técnicos",
-                "valor": total_tecnicos,
-                "clase": "info",
+                "titulo": "Total Luminarias",
+                "valor": Luminaria.objects.count(),
+                "clase": "",
                 "unidad": "",
             },
             {
@@ -482,8 +512,9 @@ def dashboard_supervisor(request):
             },
         ],
         "redes_consumo": redes_consumo,
-            
+        "zonas_estado": zonas_estado,
     }
+
     return render(
         request,
         "luminarias/dashboard_supervisor.html",
@@ -570,25 +601,13 @@ def dashboard_tecnico(request):
 
 
 def agregar_redes(request):
-
-    # Agregar \Editar Red
+    # Agregar / Editar Red / Eliminar Red
     if request.method == "POST":
-
-        nombre_red = request.POST.get(
-            "nombre_red",
-            ""
-        ).strip()
-        voltaje = request.POST.get(
-            "voltaje",
-            ""
-        ).strip()
-        zona_id = request.POST.get(
-            "zona",
-            ""
-        ).strip()
-        editar_id = request.POST.get(
-            "editar_id"
-        )
+        nombre_red = request.POST.get("nombre_red", "").strip()
+        voltaje = request.POST.get("voltaje", "").strip()
+        # zona_id = request.POST.get("zona", "").strip()
+        editar_id = request.POST.get("editar_id", "").strip()
+        eliminar_id = request.POST.get("eliminar_id", "").strip()
 
         # Editar Red
         if editar_id:
@@ -616,90 +635,97 @@ def agregar_redes(request):
 
             messages.success(
                 request,
-                "Red actualizada correctamente"
+                f"Red {red.nombre_red} actualizada correctamente"
             )
             return redirect("agregar_redes")
+# Eliminar Red
+        if eliminar_id:
+            red = Red.objects.filter(
+                id_red=eliminar_id
+            ).first()
 
-        # Agregar Nueva Red
-        if not nombre_red or not voltaje or not zona_id:
-
-            messages.error(
-                request,
-                "Todos los campos son obligatorios"
-            )
-            return redirect("agregar_redes")
-
-        ultimo_red = Red.objects.filter(
-            id_red__startswith="RED"
-        ).aggregate(
-            max_id=Max("id_red")
-        )["max_id"]
-
-        #Formato para seguir el id
-        if ultimo_red:
-            numero = int(
-                re.search(r"\d+", ultimo_red).group()
-            )
-            nuevo_numero = numero + 1
-        else:
-            nuevo_numero = 1
-
-        nuevo_codigo = f"RED{nuevo_numero:03d}"
-        while Red.objects.filter(
-            id_red=nuevo_codigo
-        ).exists():
-
-            nuevo_numero += 1
-            nuevo_codigo = f"RED{nuevo_numero:03d}"
-        try:
-            zona = Zona.objects.get(
-                id_zona=zona_id
-            )
-            if zona.red:
+            if not red:
                 messages.error(
                     request,
-                    "La zona ya tiene una red asignada"
+                    "La red no existe"
                 )
-                return redirect("agregar_redes")
+            elif red.zonas.exists() or red.luminarias.exists() or red.lecturas.exists():
+                messages.error(
+                    request,
+                    "No se puede eliminar la red porque tiene relaciones asociadas"
+                )
+            else:
+                try:
+                    red.delete()
+                    messages.success(
+                        request,
+                        f"Red {red.nombre_red} eliminada correctamente"
+                    )
+                except IntegrityError:
+                    messages.error(
+                        request,
+                        f"No se puede eliminar la red {red.nombre_red} porque tiene dependencias registradas"
+                    )
+
+            return redirect("agregar_redes")
+
+        ###### Agregar Nueva Red
+        # if not nombre_red or not voltaje or not zona_id:
+
+        #     messages.error(
+        #         request,
+        #         "Todos los campos son obligatorios"
+        #     )
+        #     return redirect("agregar_redes")
+        
+        # Agregar Nueva Red FORMATO ID RED001, RED002, etc
+        nuevo_codigo = _siguiente_codigo(
+            Red,
+            "RED",
+            "id_red"
+        )
+        try:
+            # zona = Zona.objects.get(
+            #     id_zona=zona_id
+            # )
+            usuario_actual = Usuario.objects.filter(
+                id_usuario=request.session.get("usuario_id")
+            ).first()
+            # if zona.red:
+            #     messages.error(
+            #         request,
+            #         "La zona ya tiene una red asignada"
+            #     )
+            #     return redirect("agregar_redes")
 
             nueva_red = Red.objects.create(
                 id_red=nuevo_codigo,
                 nombre_red=nombre_red,
                 voltaje=Decimal(voltaje),
-                consumo_esperado=Decimal("0.00")
+                consumo_esperado=Decimal("0.00"),
             )
-            zona.red = nueva_red
-            zona.save()
+
+            # zona.red = nueva_red
+            # zona.save()
 
             messages.success(
                 request,
-                "Red agregada correctamente"
+                f"Red {nueva_red.nombre_red} agregada correctamente"
             )
         except Exception as e:
-
             messages.error(
                 request,
                 f"Error: {e}"
             )
+
         return redirect("agregar_redes")
 
-    # Filtros
-    q = request.GET.get(
-        "q",
-        ""
-    ).strip()
-    selected_zona = request.GET.get(
-        "zona",
-        ""
-    ).strip()
-    selected_estado = request.GET.get(
-        "estado",
-        ""
-    ).strip()
-    detalle_id = request.GET.get(
-        "detalle",
-        ""
-    ).strip()
+   # Filtros
+    q = request.GET.get("q", "").strip()
+    selected_zona = request.GET.get("zona", "").strip()
+    selected_estado = request.GET.get("estado", "").strip()
+    detalle_id = request.GET.get("detalle", "").strip()
+    usuario_actual_id = request.session.get("usuario_id")
 
     porcentaje_alerta = 10
     redes_query = Red.objects.prefetch_related(
@@ -711,18 +737,16 @@ def agregar_redes(request):
         "nombre_red"
     )
 
-    # Busqued
+    # Busqueda
     if q:
-
-        redes_query = redes_query.filter(
+        redes_usuario_query = redes_usuario_query.filter(
             Q(id_red__icontains=q) |
             Q(nombre_red__icontains=q)
         )
 
     # Filtro Zona
     if selected_zona:
-
-        redes_query = redes_query.filter(
+        redes_usuario_query = redes_usuario_query.filter(
             zonas__id_zona=selected_zona
         ).distinct()
 
@@ -784,7 +808,7 @@ def agregar_redes(request):
             if red["estado"] != "Activa"
         ]
 
-    # Zonas
+    # Cargar Zonas para Filtro y Modal
     zonas = Zona.objects.select_related(
         "red"
     ).all().order_by(
@@ -1631,6 +1655,7 @@ def registrar_lecturas(request):
     }
 
     return render(request, "luminarias/registrar_lecturas.html", contexto)
+
 base = page_view("base")
 base_supervisor = page_view("base_supervisor")
 base_tecnicos = page_view("base_tecnicos")

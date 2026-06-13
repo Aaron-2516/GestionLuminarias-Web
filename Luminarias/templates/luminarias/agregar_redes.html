@@ -4,7 +4,7 @@
 {% block title %}Agregar Redes{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'app/css/agregar_redes.css' %}?v=100">
+<link rel="stylesheet" href="{% static 'app/css/agregar_redes.css' %}?v=101">
 {% endblock %}
 
 {% block content %}
@@ -88,7 +88,7 @@
                 <th>Código</th>
                 <th>Nombre</th>
                 <th>Voltaje</th>
-                <th>Consumo esperado</th>
+                <!--<th>Consumo esperado</th>-->
                 <th>Zona</th>
                 <th>Estado</th>
                 <th>Acciones</th>
@@ -101,7 +101,7 @@
                 <td>{{ red.id_red }}</td>
                 <td>{{ red.nombre_red }}</td>
                 <td>{{ red.voltaje }}</td>
-                <td>{{ red.consumo_esperado }}</td>
+                <!--<td>{{ red.consumo_esperado }}</td>-->
 
                 <td>
                     {% for zona in red.zonas %}
@@ -140,6 +140,11 @@
                     >
                     Editar
                 </button>
+                <form method="POST" class="form-eliminar">
+                        {% csrf_token %}
+                        <input type="hidden" name="eliminar_id" value="{{ red.id_red }}">
+                        <button type="submit" class="btn-eliminar">Eliminar</button>
+                    </form>
                 </td>
             </tr>
             {% empty %}
@@ -235,15 +240,6 @@
                 <option value="110">110V</option>
                 <option value="220">220V</option>
             </select>
-
-            <label for="zona">Zona: <span class="required"> *</span></label>
-            <select id="zona" name="zona" required>
-                <option value="">-- Seleccione una zona --</option>
-                {% for zona in zonas_disponibles %}
-                    <option value="{{ zona.id_zona }}">{{ zona.nombre_zona }}</option>
-                {% endfor %}
-            </select>
-
             <button type="submit" class="btn-guardar">Guardar Red</button>
         </form>
     </div>
