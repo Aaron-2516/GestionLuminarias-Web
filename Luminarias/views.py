@@ -201,10 +201,10 @@ def agregar_tecnicos(request):
         zona_ids = []
         if editar_id:
             zona_ids = request.POST.getlist("zona_editar")
-        # else:
-        #     zona_ids = request.POST.getlist(
-        #         "zona_agregar"
-        #     )
+        else:
+             zona_ids = request.POST.getlist(
+                 "zona_agregar"
+            )
 
         # Eliminar Tecnico
         if eliminar_id:
@@ -808,14 +808,14 @@ def agregar_redes(request):
 
     # Busqueda
     if q:
-        redes_usuario_query = redes_usuario_query.filter(
+        redes_query = redes_query.filter(
             Q(id_red__icontains=q) |
             Q(nombre_red__icontains=q)
         )
 
     # Filtro Zona
     if selected_zona:
-        redes_usuario_query = redes_usuario_query.filter(
+        redes_query = redes_query.filter(
             zonas__id_zona=selected_zona
         ).distinct()
 
