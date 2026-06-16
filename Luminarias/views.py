@@ -592,6 +592,7 @@ def dashboard_supervisor(request):
 def dashboard_tecnico(request):
     redes_consumo = []
     consumo_total_redes = 0
+    total_luminarias_asignadas = 0
     usuario_id = request.session.get("usuario_id")
     redes_asignadas = Red.objects.none()
 
@@ -606,6 +607,7 @@ def dashboard_tecnico(request):
         fallas_red = red.luminarias.filter(estado=False).count()
         consumo_red = ultima_lectura.consumo_actual if ultima_lectura else red.consumo_esperado
         consumo_total_redes += consumo_red
+        total_luminarias_asignadas += total_red_luminarias
 
         if total_red_luminarias == 0:
             estado = "Sin luminarias"
@@ -633,13 +635,13 @@ def dashboard_tecnico(request):
         "metricas_dashboard": [
             {
                 "titulo": "Total Luminarias",
-                "valor": Luminaria.objects.count(),
+                "valor": total_luminarias_asignadas,
                 "clase": "",
                 "unidad": "",
             },
             {
                 "titulo": "Total Redes",
-                "valor": Red.objects.count(),
+                "valor": redes_asignadas.count(),
                 "clase": "success",
                 "unidad": "",
             },
@@ -1277,13 +1279,17 @@ def agregar_luminarias(request):
     return render(request, "luminarias/agregar_luminarias.html", context)
 
 
+#------------------------------------------------------------------------------------------------------#
+#Aqui comienza el codigo de generar reporte consumo.
+
+# Define las opciones de periodo que el usuario puede elegir para generar el reporte
 PERIODOS_REPORTE = [
     {"value": "mes_actual", "label": "Mes actual"},
     {"value": "mes", "label": "Mes"},
 ]
 
 
-#extrae los meses ingresado en la base de datos para sugerirlos en el selector del informe
+# Esta funcion busca en la base de datos todos los meses donde ya existen lecturas.
 def _meses_con_lecturas():
     return [
         {
@@ -1296,7 +1302,7 @@ def _meses_con_lecturas():
     ]
 
 
-#calcula el mes que quiero para el informe, mes actual o algun mes en especifico.
+# Esta funcion decide desde que dia hasta que dia debe buscar el reporte basicamente es el calendario que aparece al escoger un mes.
 def _periodo_fechas(periodo, mes=None):
     hoy = timezone.localdate()
     fecha_inicio = hoy.replace(day=1)
@@ -1307,21 +1313,19 @@ def _periodo_fechas(periodo, mes=None):
             fecha_inicio = date(anio, numero_mes, 1)
         except (AttributeError, TypeError, ValueError):
             pass
-
-    if fecha_inicio.month == 12:
+    if fecha_inicio.month == 12:   
         siguiente_mes = date(fecha_inicio.year + 1, 1, 1)
-    else:
+    else: 
         siguiente_mes = date(fecha_inicio.year, fecha_inicio.month + 1, 1)
-
     return fecha_inicio, siguiente_mes - timedelta(days=1)
 
-#convierte valores numericos  a float 
+# Convierte un valor numerico a float sirve para poder sumar, dividir y comparar sin problemas.
 def _to_float(value):
     if value is None:
         return 0.0
     return float(value)
 
-#Redondea valores numericos a 2 decimales para el informe
+# Redondea numeros a 2 decimales para que el reporte se vea limpio.
 def _round(value):
     return round(_to_float(value), 2)
 
@@ -1332,51 +1336,68 @@ def _zona_nombre(red):
     zonas = list(red.zonas.all())
     if not zonas:
         return "Sin zona"
+
     return ", ".join(zona.nombre_zona for zona in zonas)
 
 
 def _estado_red(red, variacion):
+    # Contamos cuantas luminarias pertenecen a la red.
     total_luminarias = red.luminarias.count()
+
+    
     fallas = red.luminarias.filter(estado=False).count()
 
     if total_luminarias == 0:
+        
         return "sin_luminarias"
 
     if fallas > 0 or abs(_to_float(variacion)) >= 10:
         return "alerta"
-
     return "ok"
 
-#filtra las lecturas segun el periodo seleccionado y el municipio (si se eligio uno) para generar el informe.
+# Esta funcion trae las lecturas desde la base de datos, pero solo las que sirven para el reporte que el usuario pidio.
 def _lecturas_filtradas(fecha_inicio, fecha_fin, municipio_id):
+    # Empezamos con todas las lecturas.
+    # prefetch_related trae zonas y luminarias relacionadas para consultar mas rapido.
     lecturas = RegistrarLectura.objects.select_related("red").prefetch_related(
         "red__zonas",
         "red__luminarias",
     )
 
     if fecha_inicio and fecha_fin:
+        # Dejamos solo las lecturas dentro del rango de fechas.
         lecturas = lecturas.filter(
             fecha_lectura__gte=fecha_inicio,
             fecha_lectura__lte=fecha_fin
         )
 
     if municipio_id and municipio_id != "todos":
+        # Si el usuario escogio un municipio, dejamos solo lecturas de redes que pertenecen a zonas de ese municipio.
         lecturas = lecturas.filter(
             red__zonas__municipio_id=municipio_id
         ).distinct()
 
     return lecturas
 
-#calcula consumo total, cantidad de luminarias y variacion promedio.
+# Esta funcion calcula los cuadritos principales del reporte,
+# consumo total, cantidad de luminarias y variacion promedio.
 def _kpis_desde_rows(rows, kwh_index, lums_index, var_index=None):
-   
+
+    # Sumamos todos los consumos de la columna indicada.
     total_kwh = sum(_to_float(row[kwh_index]) for row in rows)
+
+    # Sumamos todas las luminarias de la columna indicada.
     total_lums = sum(int(_to_float(row[lums_index])) for row in rows)
+
+    # Guardamos solo las variaciones validas.
     variaciones = [
         _to_float(row[var_index])
         for row in rows
         if var_index is not None and row[var_index] not in ("", None)
     ]
+
+    # Si hay variaciones, sacamos el promedio.
+    # Si no hay, usamos cero para que no falle la division.
     variacion = sum(variaciones) / len(variaciones) if variaciones else 0
 
     return {
@@ -1387,7 +1408,9 @@ def _kpis_desde_rows(rows, kwh_index, lums_index, var_index=None):
     }
 
 
+# Esta funcion prepara los datos para una grafica de barras.
 def _barras(rows, label_index, value_index):
+    # Esta funcion prepara los datos para una grafica de barras.
     
     max_value = max([_to_float(row[value_index]) for row in rows] or [0])
     if max_value <= 0:
@@ -1404,11 +1427,15 @@ def _barras(rows, label_index, value_index):
 
 
 def generar_informe(request):
-    
+    # Esto hace dos trabajos:
+    # 1. Si la pagina pide datos por AJAX, devuelve JSON con la tabla del reporte.
+    # 2. Si el usuario abre la pagina normal, muestra el HTML del reporte.
+
     if request.headers.get("X-Requested-With") == "XMLHttpRequest":
         return JsonResponse({"data": _generar_reporte_data(request)})
 
     meses_reporte = _meses_con_lecturas()
+
     mes_default = (
         meses_reporte[0]["value"]
         if meses_reporte
@@ -1437,15 +1464,18 @@ def generar_informe(request):
         context
     )
 
-#genera el reporte segun los filtros seleccionados, puede ser por red, luminaria, municipio o zona. 
+# Esta funcion arma los datos del reporte segun los filtros seleccionados.
+# Puede crear reporte por red, por luminaria, por municipio o por zona.
 def _generar_reporte_data(request):
-   
     tipo = request.GET.get("tipo", "zona")
     periodo = request.GET.get("periodo", "mes_actual")
     mes = request.GET.get("mes", "")
     municipio_id = request.GET.get("municipio", "todos")
+
     fecha_inicio, fecha_fin = _periodo_fechas(periodo, mes)
+
     lecturas = _lecturas_filtradas(fecha_inicio, fecha_fin, municipio_id)
+
     red_ids_con_lecturas = list(
         lecturas.exclude(red_id__isnull=True).values_list(
             "red_id",
@@ -1467,6 +1497,7 @@ def _generar_reporte_data(request):
         for red in redes:
             lecturas_red = lecturas.filter(red=red)
             consumo = lecturas_red.aggregate(total=Sum("consumo_actual"))["total"] or Decimal("0")
+
             variacion = lecturas_red.order_by("-fecha_lectura").first()
             variacion_val = variacion.variacion_consumo if variacion else 0
             luminarias = red.luminarias.count()
@@ -1536,6 +1567,7 @@ def _generar_reporte_data(request):
     elif tipo == "mun":
         headers = ["Municipio", "Zonas", "Redes", "Luminarias", "kWh", "Variacion"]
         rows = []
+
         municipios = Municipio.objects.filter(
             zonas__red_id__in=red_ids_con_lecturas
         ).prefetch_related("zonas__red").distinct().order_by("nombre_municipio")
@@ -1569,8 +1601,11 @@ def _generar_reporte_data(request):
         barras = _barras(rows, 0, 4)
 
     else:
+        # Este es el reporte por defecto si no se pide otro tipo.
         headers = ["Zona", "Municipio", "Red", "kWh", "Luminarias", "Variacion"]
         rows = []
+
+        # con esto es para seleccionar solo las redes que tienen lecturas, y las zonas relacionadas a esas redes.
         zonas = Zona.objects.filter(
             red_id__in=red_ids_con_lecturas
         ).select_related("municipio", "red").prefetch_related(
@@ -1578,12 +1613,16 @@ def _generar_reporte_data(request):
         ).order_by("nombre_zona")
 
         if municipio_id and municipio_id != "todos":
+            # Si se eligio municipio, dejamos solo zonas de ese municipio.
             zonas = zonas.filter(municipio_id=municipio_id)
 
         for zona in zonas:
             lecturas_zona = lecturas.filter(red=zona.red) if zona.red else RegistrarLectura.objects.none()
+
             consumo = lecturas_zona.aggregate(total=Sum("consumo_actual"))["total"] or Decimal("0")
+
             ultima = lecturas_zona.order_by("-fecha_lectura").first()
+
             luminarias = zona.red.luminarias.count() if zona.red else 0
 
             rows.append([
@@ -1595,10 +1634,13 @@ def _generar_reporte_data(request):
                 _round(ultima.variacion_consumo if ultima else 0),
             ])
 
+        
         totals = ["Total", "", "", _round(sum(row[3] for row in rows)), sum(row[4] for row in rows), ""]
         kpis = _kpis_desde_rows(rows, 3, 4, 5)
         barras = _barras(rows, 0, 3)
 
+
+    # JavaScript recibe esto y lo usa para pintar tabla, totales, KPIs y grafica.
     return {
         "headers": headers,
         "rows": rows,
@@ -1606,6 +1648,10 @@ def _generar_reporte_data(request):
         "kpis": kpis,
         "barras": barras,
     }
+
+
+#-------------- Aqui termina la logica de generar reporte------------------------------#
+
 
 
 def registrar_lecturas(request):
