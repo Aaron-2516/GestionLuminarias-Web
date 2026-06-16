@@ -76,11 +76,12 @@ WSGI_APPLICATION = 'LumSys.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'lum_sys',
+
+        'NAME': 'LumSys',
         'USER': 'postgres',
-        'PASSWORD': 'un22001',
+        'PASSWORD': 'Gerardo2002',
         'HOST': 'localhost',
-        'PORT': '5433',
+        'PORT': '5432',
     
 }
 }
