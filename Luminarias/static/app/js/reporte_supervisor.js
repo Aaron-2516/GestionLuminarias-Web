@@ -87,7 +87,6 @@ document.getElementById("rep-tfoot").innerHTML = "";
 
 function setExportEnabled(enabled) {
 document.getElementById("btn-pdf").disabled = !enabled;
-document.getElementById("btn-excel").disabled = !enabled;
 }
 
 function getReportParams() {
@@ -307,38 +306,9 @@ ${tabla}
 ventana.document.close();
 }
 
-function exportarCSV() {
-const rows = [...document.querySelectorAll("#rep-tabla tr")].map((tr) =>
-[...tr.children].map((cell) => `"${cell.textContent.trim().replaceAll('"', '""')}"`).join(",")
-);
-const blob = new Blob([rows.join("\n")], { type: "text/csv;charset=utf-8;" });
-const link = document.createElement("a");
-link.href = URL.createObjectURL(blob);
-link.download = "Reporte.csv";
-link.click();
-URL.revokeObjectURL(link.href);
-}
-
-function exportarExcel() {
-if (!reporteActivo) {
-return;
-}
-
-if (!window.XLSX) {
-exportarCSV();
-return;
-}
-
-const tabla = document.getElementById("rep-tabla");
-const wb = XLSX.utils.table_to_book(tabla, { sheet: "Reporte" });
-const fecha = new Date().toISOString().split("T")[0];
-XLSX.writeFile(wb, `Reporte_${fecha}.xlsx`);
-}
-
 document.addEventListener("DOMContentLoaded", () => {
 document.getElementById("btn-generar").addEventListener("click", generarReporte);
 document.getElementById("btn-pdf").addEventListener("click", exportarPDF);
-document.getElementById("btn-excel").addEventListener("click", exportarExcel);
 actualizarCampoMes();
 
 ["rep-tipo", "rep-periodo", "rep-mes", "rep-municipio"].forEach((id) => {
@@ -353,4 +323,3 @@ mostrar("estado-vacio");
 
 window.generarReporte = generarReporte;
 window.exportarPDF = exportarPDF;
-window.exportarExcel = exportarExcel;
