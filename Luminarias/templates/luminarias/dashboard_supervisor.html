@@ -4,7 +4,7 @@
 {% block title %}Dashboard Supervisor{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'app/css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'app/css/dashboard.css' %}?v=5">
 {% endblock %}
 
 {% block topbar_title %}Panel de {{ request.session.usuario_nombre|default:"Supervisor" }}{% endblock %}
@@ -41,32 +41,79 @@
     {% endfor %}
 </div>
 
-<div class="table-box">
+<div class="tables-grid supervisor-tables-grid">
+
+    <div class="table-box supervisor-table">
         <div class="table-title">Consumo por Red</div>
 
-        <table>
-            <thead>
-                <tr>
-                    <th>Red</th>
-                    <th>Consumo</th>
-                    <th>Estado</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for red in redes_consumo %}
+        <div class="table-scroll">
+            <table class="consumo-table">
+                <thead>
                     <tr>
-                        <td>{{ red.nombre }}</td>
-                        <td>{{ red.consumo }} kWh</td>
-                        <td class="{{ red.estado_clase }}">{{ red.estado }}</td>
+                        <th>Red</th>
+                        <th>Consumo</th>
+                        <th>Estado</th>
                     </tr>
-                {% empty %}
-                    <tr>
-                        <td colspan="3">No hay redes registradas.</td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    {% for red in redes_consumo %}
+                        <tr>
+                            <td>{{ red.nombre }}</td>
+                            <td>{{ red.consumo }} kWh</td>
+                            <td>
+                                <span class="estado-badge {{ red.estado_clase }}">
+                                    {{ red.estado }}
+                                </span>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="3" class="empty-table">
+                                No hay redes registradas.
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
+
+    <div class="table-box supervisor-table">
+        <div class="table-title">Estado por Zona</div>
+
+        <div class="table-scroll">
+            <table class="consumo-table">
+                <thead>
+                    <tr>
+                        <th>Zona</th>
+                        <th>Luminarias</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for zona in zonas_estado %}
+                        <tr>
+                            <td>{{ zona.nombre }}</td>
+                            <td>{{ zona.luminarias }}</td>
+                            <td>
+                                <span class="estado-badge {{ zona.estado_clase }}">
+                                    {{ zona.estado }}
+                                </span>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="3" class="empty-table">
+                                No hay zonas registradas.
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
         
         
 {% endblock %}

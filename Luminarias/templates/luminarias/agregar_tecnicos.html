@@ -4,7 +4,7 @@
 {% block title %}Agregar Técnicos{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'app/css/listado.css' %}?v=100">
+<link rel="stylesheet" href="{% static 'app/css/listado.css' %}?v=213">
 {% endblock %}
 
 {% block content %}
@@ -51,13 +51,7 @@
 <section class="filters">
     <form id="form-busqueda" action="" method="GET">
         <label for="barra-busqueda">Buscar:</label>
-        <input
-            type="search"
-            id="barra-busqueda"
-            name="q"
-            placeholder="Nombre o Código"
-            value="{{ q }}"
-        >
+        <input type="search" id="barra-busqueda" name="q" placeholder="Nombre o Código" value="{{ q }}">
     </form>
 
     <select name="zona" id="filtro-zona-select" form="form-busqueda" onchange="this.form.submit()">
@@ -65,7 +59,7 @@
 
         {% for zona in zonas %}
         <option value="{{ zona.id_zona }}"{% if selected_zona == zona.id_zona|stringformat:"s" %} selected{% endif %}>
-            {{ zona.nombre_zona }}{% if zona.red %} - {{ zona.red.nombre_red }}{% endif %}
+            {{ zona.nombre_zona }}{% if zona.red %}{% endif %}
         </option>
         {% endfor %}
     </select>
@@ -95,7 +89,7 @@
                 <th>Nombre completo</th>
                 <th>Correo</th>
                 <th>Teléfono</th>
-                <th>Zona</th>
+                <!--<th>Zona</th>-->
                 <th>Estado</th>
                 <th>Acciones</th>
             </tr>
@@ -104,21 +98,19 @@
         <tbody>
             {% for tecnico in tecnicos %}
             <tr>
-                <td>{{ tecnico.id_usuario }}</td>
-
+                <td>
+                    {{ tecnico.id_usuario }}                   
+                </td>
                 <td>
                     {{ tecnico.nombre_usuario }} {{ tecnico.apellido_usuario }}
                 </td>
-
                 <td>
                     {{ tecnico.id_usuario }}@gob.sv
                 </td>
-
                 <td>
                     {{ tecnico.telefono }}
                 </td>
-
-                <td>
+                <!--<td>
                     {% for asignacion in tecnico.zonas_asignadas.all %}
                         {{ asignacion.zona.nombre_zona }}
                         {% if asignacion.zona.red %}
@@ -128,17 +120,14 @@
                     {% empty %}
                         Sin zona
                     {% endfor %}
-                </td>
-
+                </td>-->
                 <td>
                     {% if tecnico.estado %}
                     <span class="badge badge-activo">Activo</span>
                     {% else %}
                     <span class="badge badge-inactivo">Inactivo</span>
                     {% endif %}
-                </td>
-
-                
+                </td>                
                 <td class="acciones">
                     <form method="GET" class="form-ver-detalle">
                         <input type="hidden" name="q" value="{{ q }}">
@@ -149,18 +138,21 @@
                             Ver
                         </button>
                     </form>
-                    <button
-                    class="btn-editar"
-                    type="button"
+                    <button class="btn-editar" type="button"
                     data-id="{{ tecnico.id_usuario }}"
                     data-nombre="{{ tecnico.nombre_usuario }}"
                     data-apellido="{{ tecnico.apellido_usuario }}"
                     data-telefono="{{ tecnico.telefono }}"
                     data-estado="{{ tecnico.estado|yesno:'activo,inactivo' }}"
-                    data-zona="{% for asignacion in tecnico.zonas_asignadas.all %}{{ asignacion.zona.id_zona }}{% endfor %}"
+                    data-zona="{% for asignacion in tecnico.zonas_asignadas.all %}{{ asignacion.zona.id_zona }}{% if not forloop.last %},{% endif %}{% endfor %}"
                     >
                     Editar
                 </button>
+                <form method="POST" class="form-eliminar">
+                        {% csrf_token %}
+                        <input type="hidden" name="eliminar_id" value="{{ tecnico.id_usuario }}">
+                        <button type="submit" class="btn-eliminar">Eliminar</button>
+                    </form>
                 </td>
             </tr>
 
@@ -253,50 +245,30 @@
             {% csrf_token %}
 
             <label for="nombre_usuario">Nombre<span class="required"> *</span></label>
-            <input
-                type="text"
-                id="nombre_usuario"
-                name="nombre_usuario"
-                placeholder="Nombre Usuario"
-                required
-            >
+            <input type="text" id="nombre_usuario" name="nombre_usuario" placeholder="Nombre Usuario" required>
 
             <label for="apellido_usuario">Apellido<span class="required"> *</span></label>
-            <input
-                type="text"
-                id="apellido_usuario"
-                name="apellido_usuario"
-                placeholder="Apellido Usuario"
-                required
-            >
+            <input type="text" id="apellido_usuario" name="apellido_usuario" placeholder="Apellido Usuario" required>
 
             <label for="telefono">Teléfono<span class="required"> *</span></label>
-            <input
-                type="number"
-                id="telefono"
-                name="telefono"
-                placeholder="Telefono de 8 digitos"
-                required
-            >
+            <input type="number" id="telefono" name="telefono" placeholder="Telefono de 8 digitos" required>
 
             <label for="zona">Zona<span class="required"> *</span></label>
-            <select name="zona" id="agregar-zona-select">
-                <option value="">-- Seleccione una zona --</option>
+            <div class="lista-zonas">
                 {% for zona in zonas %}
-                <option value="{{ zona.id_zona }}"{% if selected_zona == zona.id_zona|stringformat:"s" %} selected{% endif %}>
-                    {{ zona.nombre_zona }}{% if zona.red %} - {{ zona.red.nombre_red }}{% endif %}
-                </option>
+                <label class="checkbox-zona">
+                    <input type="checkbox" name="zona_agregar" value="{{ zona.id_zona }}">
+                    <span>
+                        {{ zona.nombre_zona }}
+                        {% if zona.red %}
+                        - {{ zona.red.nombre_red }}
+                        {% endif %}
+                    </span>
+                </label>
                 {% endfor %}
-            </select>
-
+            </div>
             <label for="contrasena">Contraseña<span class="required"> *</span></label>
-            <input
-                type="password"
-                id="contrasena"
-                name="contrasena"
-                placeholder="Contraseña"
-                required
-            >
+            <input type="password" id="contrasena" name="contrasena" placeholder="Contraseña" required>
 
             <button type="submit" class="btn-guardar">
                 Guardar Técnico
@@ -319,28 +291,14 @@
             <input type="hidden" name="editar_id" id="editar_id">
 
             <label for="nombre_usuario">Nombre<span class="required">*</span></label>
-            <input
-                type="text"
-                id="editar_nombre_usuario"
-                name="nombre_usuario"
-                required
-            >
+            <input type="text" id="editar_nombre_usuario" name="nombre_usuario" required>
 
             <label for="apellido_usuario">Apellido</label>
-            <input
-                type="text"
-                id="editar_apellido_usuario"
-                name="apellido_usuario"
-                required
-            >
+            <input type="text" id="editar_apellido_usuario" name="apellido_usuario" required>
 
             <label for="telefono">Teléfono</label>
-            <input
-                type="number"
-                id="editar_telefono"
-                name="telefono"
-                required
-            >
+            <input type="number" id="editar_telefono" name="telefono" required>
+            
             <label for="estado">Estado</label>
             <select id="editar_estado" name="estado" required>
                 <option value="activo">Activo</option>
@@ -348,13 +306,19 @@
             </select>
 
             <label for="zona">Zona<span class="required"> *</span></label>
-            <select name="zona" id="editar-zona-select">
+            <div class="lista-zonas">
                 {% for zona in zonas %}
-                <option value="{{ zona.id_zona }}"{% if selected_zona == zona.id_zona|stringformat:"s" %} selected{% endif %}>
-                    {{ zona.nombre_zona }}{% if zona.red %} - {{ zona.red.nombre_red }}{% endif %}
-                </option>
+                <label class="checkbox-zona">
+                    <input type="checkbox" name="zona_editar" value="{{ zona.id_zona }}">
+                    <span>
+                        {{ zona.nombre_zona }}
+                        {% if zona.red %}
+                        - {{ zona.red.nombre_red }}
+                        {% endif %}
+                    </span>
+                </label>
                 {% endfor %}
-            </select>
+            </div>
 
             <button type="submit" class="btn-guardar">
                 Actualizar Técnico
@@ -363,10 +327,11 @@
     </div>
 </div>
 
+
 {% endblock content %}
 
 {% block extra_js %}
-<script src="{% static 'app/js/modal_agregar.js' %}?v3"></script>
+<script src="{% static 'app/js/modal_agregar.js' %}?v6"></script>
 <!--Limpiar Filtros-->
 <script>
 document.addEventListener("DOMContentLoaded", function () {

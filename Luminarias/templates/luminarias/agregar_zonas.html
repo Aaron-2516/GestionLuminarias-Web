@@ -6,24 +6,23 @@
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'app/css/agregar_zona.css' %}?v=100">
 {% endblock %}
+
 {% block topbar_title %}Registrar Zonas{% endblock %}
 
 {% block content %}
-
 <div class="header">
     <h2>Registrar Zonas</h2>
-    <button id="abrirModdalAgregar" class="btn-abrir" type ="button">Agregar Zona</button>
+    <button id="abrirModalAgregar" class="btn-abrir" type="button">Agregar Zona</button>
 </div>
 
-{%if message%}
-    <div class="alerts">
-    {%for message in messages%}
-        <p class="alert alert-{{message.tags}}"> {{message}} </p>
-    {%endfor%}
-    </div>
-{%endif%}
+{% if messages %}
+<div class="alerts">
+    {% for message in messages %}
+    <p class="alert alert-{{ message.tags }}">{{ message }}</p>
+    {% endfor %}
+</div>
+{% endif %}
 
-<!-- Tarjetas resumen de zonas-->
 <div class="cards">
     <article class="card">
         <h3>Total de Zonas</h3>
@@ -32,7 +31,7 @@
 
     <article class="card">
         <h3>Zonas con Luminarias Activas</h3>
-        <p>{{ zonas_con_luminarias_activas }}</p>     
+        <p>{{ zonas_con_luminarias_activas }}</p>
     </article>
 
     <article class="card">
@@ -42,18 +41,60 @@
 
     <article class="card">
         <h3>Zonas en Mantenimiento</h3>
-        <p>{{ zonas_en_mantenimiento }}</p>   
+        <p>{{ zonas_en_mantenimiento }}</p>
     </article>
 </div>
 
-<!-- Tabla de zonas -->
+<section class="filters">
+    <form id="form-busqueda" action="" method="GET">
+        <label for="barra-busqueda">Buscar:</label>
+        <input
+            type="search"
+            id="barra-busqueda"
+            name="q"
+            placeholder="Código, nombre, tipo, red o municipio"
+            value="{{ q }}"
+        >
+    </form>
+
+    <select name="tipo" id="tipo-select" form="form-busqueda" onchange="this.form.submit()">
+        <option value="">-- Tipo de zona --</option>
+        {% for tipo in tipos_zona %}
+        <option value="{{ tipo }}"{% if selected_tipo == tipo %} selected{% endif %}>{{ tipo }}</option>
+        {% endfor %}
+    </select>
+
+    <select name="red" id="red-select" form="form-busqueda" onchange="this.form.submit()">
+        <option value="">-- Red asignada --</option>
+        {% for red in redes %}
+        <option value="{{ red.id_red }}"{% if selected_red == red.id_red %} selected{% endif %}>{{ red.nombre_red }}</option>
+        {% endfor %}
+    </select>
+
+    <select name="municipio" id="municipio-select" form="form-busqueda" onchange="this.form.submit()">
+        <option value="">-- Municipio --</option>
+        {% for municipio in municipios %}
+        <option value="{{ municipio.id_municipio }}"{% if selected_municipio == municipio.id_municipio %} selected{% endif %}>{{ municipio.nombre_municipio }}</option>
+        {% endfor %}
+    </select>
+
+    <button class="submit" type="submit" form="form-busqueda">Buscar</button>
+    <button class="reset" type="button" id="btnLimpiarFiltros">Limpiar</button>
+</section>
+
+<h3>Zonas Registradas</h3>
+
 <div class="table-wrapper-zonas">
     <table class="table-zonas">
         <thead>
             <tr>
-                <th>ID</th>
-                <th>Nombre de la Zona</th>
-                <th>Descripción</th>
+                <th>Código</th>
+                <th>Nombre</th>
+                <th>Tipo</th>
+                <th>Red Asignada</th>
+                <th>Distrito</th>
+                <th>N° Luminarias</th>
+                <th>Estado</th>
                 <th>Acciones</th>
             </tr>
         </thead>
@@ -62,18 +103,250 @@
             <tr>
                 <td>{{ zona.id_zona }}</td>
                 <td>{{ zona.nombre_zona }}</td>
-                <td>{{ zona.descripcion }}</td>
+                <td>{{ zona.tipo_zona }}</td>
+                <td>
+                    {% if zona.red %}
+                    {{ zona.red.nombre_red }}
+                    {% else %}
+                    Sin red
+                    {% endif %}
+                </td>
+                <td>
+                    {% if zona.municipio %}
+                    {{ zona.municipio.nombre_municipio }}
+                    {% else %}
+                    Sin municipio
+                    {% endif %}
+                </td>
+                <td>{{ zona.luminarias_totales }}</td>
+                <td>
+                    {% if zona.estado_clase == "activo" %}
+                    <span class="badge badge-activo">{{ zona.estado }}</span>
+                    {% elif zona.estado_clase == "inactivo" %}
+                    <span class="badge badge-inactivo">{{ zona.estado }}</span>
+                    {% else %}
+                    <span class="badge badge-warning">{{ zona.estado }}</span>
+                    {% endif %}
+                </td>
                 <td class="acciones">
-                    <button class="btn-editar" data-id="{{ zona.id_zona }}">Editar</button>
-                    <button class="btn-eliminar" data-id="{{ zona.id_zona }}">Eliminar</button>
+                    <form method="GET" class="form-ver-detalle">
+                        <input type="hidden" name="q" value="{{ q }}">
+                        <input type="hidden" name="tipo" value="{{ selected_tipo }}">
+                        <input type="hidden" name="red" value="{{ selected_red }}">
+                        <input type="hidden" name="municipio" value="{{ selected_municipio }}">
+                        <input type="hidden" name="detalle" value="{{ zona.id_zona }}">
+                        <button type="submit" class="btn-ver-zona">Ver</button>
+                    </form>
+                    <button
+                        class="btn-editar"
+                        type="button"
+                        data-id="{{ zona.id_zona }}"
+                        data-nombre="{{ zona.nombre_zona }}"
+                        data-tipo="{{ zona.tipo_zona }}"
+                        data-red="{% if zona.red %}{{ zona.red.id_red }}{% endif %}"
+                        data-municipio="{% if zona.municipio %}{{ zona.municipio.id_municipio }}{% endif %}"
+                    >
+                        Editar
+                    </button>
+                    <form method="POST" class="form-eliminar">
+                        {% csrf_token %}
+                        <input type="hidden" name="eliminar_id" value="{{ zona.id_zona }}">
+                        <button type="submit" class="btn-eliminar">Eliminar</button>
+                    </form>
                 </td>
             </tr>
             {% empty %}
             <tr>
-                <td class="empty-state" colspan="4">No hay zonas registradas</td>
+                <td class="empty-state" colspan="8">No hay zonas registradas</td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
 </div>
+
+{% if zona_detalle %}
+<section id="detalleZona" class="detalle-zona-abajo">
+    <div class="detalle-zona-hero">
+        <div class="detalle-identidad">
+            <p class="detalle-label">Información de la zona</p>
+            <h3>{{ zona_detalle.nombre_zona }}</h3>
+
+            {% if zona_detalle.estado_clase == "activo" %}
+            <span class="detalle-estado activo">{{ zona_detalle.estado }}</span>
+            {% elif zona_detalle.estado_clase == "inactivo" %}
+            <span class="detalle-estado inactivo">{{ zona_detalle.estado }}</span>
+            {% else %}
+            <span class="detalle-estado warning">{{ zona_detalle.estado }}</span>
+            {% endif %}
+        </div>
+
+        <form method="GET" class="form-cerrar-detalle">
+            <input type="hidden" name="q" value="{{ q }}">
+            <input type="hidden" name="tipo" value="{{ selected_tipo }}">
+            <input type="hidden" name="red" value="{{ selected_red }}">
+            <input type="hidden" name="municipio" value="{{ selected_municipio }}">
+            <button type="submit" class="btn-cerrar-detalle">Cerrar</button>
+        </form>
+    </div>
+
+    <div class="detalle-lista">
+        <div class="detalle-fila">
+            <span>Código</span>
+            <strong>{{ zona_detalle.id_zona }}</strong>
+        </div>
+
+        <div class="detalle-fila">
+            <span>Tipo</span>
+            <strong>{{ zona_detalle.tipo_zona }}</strong>
+        </div>
+
+        <div class="detalle-fila">
+            <span>Red</span>
+            <strong>
+                {% if zona_detalle.red %}
+                {{ zona_detalle.red.nombre_red }}
+                {% else %}
+                Sin red
+                {% endif %}
+            </strong>
+        </div>
+
+        <div class="detalle-fila">
+            <span>Municipio</span>
+            <strong>
+                {% if zona_detalle.municipio %}
+                {{ zona_detalle.municipio.nombre_municipio }}
+                {% else %}
+                Sin municipio
+                {% endif %}
+            </strong>
+        </div>
+
+        <div class="detalle-fila">
+            <span>Luminarias activas</span>
+            <strong>{{ zona_detalle.luminarias_activas }}</strong>
+        </div>
+
+        <div class="detalle-fila">
+            <span>Luminarias inactivas</span>
+            <strong>{{ zona_detalle.luminarias_inactivas }}</strong>
+        </div>
+
+        <div class="detalle-fila detalle-fila-completa">
+            <span>Técnicos asignados</span>
+            <strong>
+                {% for tecnico in zona_detalle.tecnicos %}
+                    {{ tecnico }}{% if not forloop.last %}, {% endif %}
+                {% empty %}
+                    Sin técnicos asignados
+                {% endfor %}
+            </strong>
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<div id="contenedorModalAgregar" class="modal">
+    <div class="modal-caja">
+        <button type="button" id="cerrarModalAgregar" class="cerrar">&times;</button>
+
+        <h2>Agregar Zona</h2>
+
+        <form method="POST">
+            {% csrf_token %}
+
+            <label for="nombre_zona">Nombre de la Zona: <span class="required">*</span></label>
+            <input type="text" id="nombre_zona" name="nombre_zona" placeholder="Nombre de la zona" required>
+
+            <label for="tipo_zona">Tipo de Zona: <span class="required">*</span></label>
+            <input type="text" id="tipo_zona" name="tipo_zona" placeholder="Ej. Residencial" required>
+
+            <label for="red">Red Asignada</label>
+            <select id="red" name="red">
+                <option value="">-- Sin red --</option>
+                {% for red in redes %}
+                <option value="{{ red.id_red }}">{{ red.nombre_red }}</option>
+                {% endfor %}
+            </select>
+
+            <label for="municipio">Municipio</label>
+            <select id="municipio" name="municipio">
+                <option value="">-- Sin municipio --</option>
+                {% for municipio in municipios %}
+                <option value="{{ municipio.id_municipio }}">{{ municipio.nombre_municipio }}</option>
+                {% endfor %}
+            </select>
+
+            <button type="submit" class="btn-guardar">Guardar Zona</button>
+        </form>
+    </div>
+</div>
+
+<div id="contenedorModalEditar" class="modal">
+    <div class="modal-caja">
+        <button type="button" id="cerrarModalEditar" class="cerrar">&times;</button>
+
+        <h2>Editar Zona</h2>
+
+        <form method="POST">
+            {% csrf_token %}
+            <input type="hidden" name="editar_id" id="editar_id">
+
+            <label for="editar_nombre_zona">Nombre de la Zona: <span class="required">*</span></label>
+            <input type="text" id="editar_nombre_zona" name="nombre_zona" required>
+
+            <label for="editar_tipo_zona">Tipo de Zona: <span class="required">*</span></label>
+            <input type="text" id="editar_tipo_zona" name="tipo_zona" required>
+
+            <label for="editar_red">Red Asignada</label>
+            <select id="editar_red" name="red">
+                <option value="">-- Sin red --</option>
+                {% for red in redes %}
+                <option value="{{ red.id_red }}">{{ red.nombre_red }}</option>
+                {% endfor %}
+            </select>
+
+            <label for="editar_municipio">Municipio</label>
+            <select id="editar_municipio" name="municipio">
+                <option value="">-- Sin municipio --</option>
+                {% for municipio in municipios %}
+                <option value="{{ municipio.id_municipio }}">{{ municipio.nombre_municipio }}</option>
+                {% endfor %}
+            </select>
+
+            <button type="submit" class="btn-guardar">Actualizar Zona</button>
+        </form>
+    </div>
+</div>
 {% endblock content %}
+
+{% block extra_js %}
+<script src="{% static 'app/js/modal_agregar.js' %}"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const btnLimpiarFiltros = document.getElementById("btnLimpiarFiltros");
+    const detalleZona = document.getElementById("detalleZona");
+
+    if (btnLimpiarFiltros) {
+        btnLimpiarFiltros.addEventListener("click", function () {
+            window.location.href = window.location.pathname;
+        });
+    }
+
+    if (detalleZona) {
+        setTimeout(function () {
+            detalleZona.scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 150);
+    }
+});
+
+document.addEventListener("DOMContentLoaded", () => {
+    document.querySelectorAll(".alert").forEach((alerta) => {
+        setTimeout(() => {
+            alerta.style.opacity = "0";
+            setTimeout(() => alerta.remove(), 300);
+        }, 3000);
+    });
+});
+</script>
+{% endblock extra_js %}
