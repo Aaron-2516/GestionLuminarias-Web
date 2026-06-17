@@ -36,15 +36,19 @@ GestionLuminarias-Web/
 │   ├── templates/
 │   │   └── luminarias/
 │   │       ├── partials/
+│   │       ├── agregar_luminarias.html
 │   │       ├── agregar_redes.html
 │   │       ├── agregar_tecnicos.html
-│   │       ├── base.html
+│   │       ├── agregar_zonas.html
 │   │       ├── base_supervisor.html
 │   │       ├── base_tecnicos.html
+│   │       ├── base.html
 │   │       ├── cambiar_contrasena.html
 │   │       ├── dashboard_supervisor.html
 │   │       ├── dashboard_tecnico.html
-│   │       └── login.html
+│   │       ├── generar_informe.html
+│   │       ├── login.html
+│   │       └── registrar_lecturas.html
 │   ├── admin.py
 │   ├── apps.py
 │   ├── models.py
