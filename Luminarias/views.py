@@ -4,6 +4,7 @@ from django.utils import timezone
 
 from django.contrib import messages
 from django.db import IntegrityError
+from django.db import transaction
 from django.db.models import Q, Max, Sum, Count
 from django.db.models.functions import TruncMonth
 import re
@@ -998,19 +999,19 @@ def agregar_zonas(request):
             messages.error(request, "El nombre y el tipo de la zona son obligatorios")
             return redirect("agregar_zonas")
 
-        red = None
-        if red_id:
-            red = Red.objects.filter(id_red=red_id).first()
-            if not red:
-                messages.error(request, "La red seleccionada no existe")
-                return redirect("agregar_zonas")
+        if not red_id or not municipio_id:
+            messages.error(request, "Debes seleccionar una red y un municipio para la zona")
+            return redirect("agregar_zonas")
 
-        municipio = None
-        if municipio_id:
-            municipio = Municipio.objects.filter(id_municipio=municipio_id).first()
-            if not municipio:
-                messages.error(request, "El municipio seleccionado no existe")
-                return redirect("agregar_zonas")
+        red = Red.objects.filter(id_red=red_id).first()
+        if not red:
+            messages.error(request, "La red seleccionada no existe")
+            return redirect("agregar_zonas")
+
+        municipio = Municipio.objects.filter(id_municipio=municipio_id).first()
+        if not municipio:
+            messages.error(request, "El municipio seleccionado no existe")
+            return redirect("agregar_zonas")
 
         if editar_id:
             zona = Zona.objects.filter(id_zona=editar_id).first()
@@ -1028,13 +1029,26 @@ def agregar_zonas(request):
             messages.success(request, "Zona actualizada correctamente")
             return redirect("agregar_zonas")
 
-        nueva_zona = Zona.objects.create(
-            id_zona=_siguiente_codigo(Zona, "ZON", "id_zona"),
-            nombre_zona=nombre_zona,
-            tipo_zona=tipo_zona,
-            red=red,
-            municipio=municipio,
-        )
+        usuario_actual_id = request.session.get("usuario_id")
+        usuario_actual = Usuario.objects.filter(id_usuario=usuario_actual_id).first()
+
+        if not usuario_actual:
+            messages.error(request, "No se pudo identificar al usuario que registra la zona")
+            return redirect("agregar_zonas")
+
+        with transaction.atomic():
+            nueva_zona = Zona.objects.create(
+                id_zona=_siguiente_codigo(Zona, "ZON", "id_zona"),
+                nombre_zona=nombre_zona,
+                tipo_zona=tipo_zona,
+                red=red,
+                municipio=municipio,
+            )
+
+            AsignacionZona.objects.get_or_create(
+                usuario=usuario_actual,
+                zona=nueva_zona,
+            )
 
         messages.success(request, f"Zona {nueva_zona.nombre_zona} agregada correctamente")
         return redirect("agregar_zonas")
