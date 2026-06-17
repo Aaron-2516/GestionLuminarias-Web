@@ -261,17 +261,17 @@
             <label for="tipo_zona">Tipo de Zona: <span class="required">*</span></label>
             <input type="text" id="tipo_zona" name="tipo_zona" placeholder="Ej. Residencial" required>
 
-            <label for="red">Red Asignada</label>
-            <select id="red" name="red">
-                <option value="">-- Sin red --</option>
+            <label for="red">Red Asignada: <span class="required">*</span></label>
+            <select id="red" name="red" required>
+                <option value="">-- Seleccione una red --</option>
                 {% for red in redes %}
                 <option value="{{ red.id_red }}">{{ red.nombre_red }}</option>
                 {% endfor %}
             </select>
 
-            <label for="municipio">Municipio</label>
-            <select id="municipio" name="municipio">
-                <option value="">-- Sin municipio --</option>
+            <label for="municipio">Municipio: <span class="required">*</span></label>
+            <select id="municipio" name="municipio" required>
+                <option value="">-- Seleccione un municipio --</option>
                 {% for municipio in municipios %}
                 <option value="{{ municipio.id_municipio }}">{{ municipio.nombre_municipio }}</option>
                 {% endfor %}
@@ -298,17 +298,17 @@
             <label for="editar_tipo_zona">Tipo de Zona: <span class="required">*</span></label>
             <input type="text" id="editar_tipo_zona" name="tipo_zona" required>
 
-            <label for="editar_red">Red Asignada</label>
-            <select id="editar_red" name="red">
-                <option value="">-- Sin red --</option>
+            <label for="editar_red">Red Asignada: <span class="required">*</span></label>
+            <select id="editar_red" name="red" required>
+                <option value="">-- Seleccione una red --</option>
                 {% for red in redes %}
                 <option value="{{ red.id_red }}">{{ red.nombre_red }}</option>
                 {% endfor %}
             </select>
 
-            <label for="editar_municipio">Municipio</label>
-            <select id="editar_municipio" name="municipio">
-                <option value="">-- Sin municipio --</option>
+            <label for="editar_municipio">Municipio: <span class="required">*</span></label>
+            <select id="editar_municipio" name="municipio" required>
+                <option value="">-- Seleccione un municipio --</option>
                 {% for municipio in municipios %}
                 <option value="{{ municipio.id_municipio }}">{{ municipio.nombre_municipio }}</option>
                 {% endfor %}

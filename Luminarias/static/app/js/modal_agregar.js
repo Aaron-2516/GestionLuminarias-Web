@@ -23,6 +23,17 @@ document.addEventListener("DOMContentLoaded", function () {
         const elemento = document.getElementById(id);
 
         if (elemento) {
+            if (elemento.tagName === "SELECT") {
+                const valorNormalizado = (valor || "").toString().trim().toLowerCase();
+                const opcion = Array.from(elemento.options).find(option => {
+                    const opcionNormalizada = option.value.toString().trim().toLowerCase();
+                    return opcionNormalizada === valorNormalizado;
+                });
+
+                elemento.value = opcion ? opcion.value : "";
+                return;
+            }
+
             elemento.value = valor || "";
         }
     }

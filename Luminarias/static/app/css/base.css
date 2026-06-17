@@ -196,6 +196,43 @@ body {
     flex-wrap: wrap;
 }
 
+.action-btn {
+    border-radius: 10px;
+    cursor: pointer;
+    display: inline-block;
+    font-family: "Sora", sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 9px 14px;
+    text-align: center;
+    text-decoration: none;
+    transition: 0.2s;
+}
+
+.action-btn:hover {
+    transform: translateY(-2px);
+}
+
+.action-btn.primary {
+    background: var(--accent);
+    color: #ffffff;
+}
+
+.action-btn.primary:hover {
+    background: var(--accent-hover);
+}
+
+.action-btn.secondary {
+    background: #ffffff;
+    border: 1px solid var(--border);
+    color: var(--text);
+}
+
+.action-btn.secondary:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
 .content {
     background: var(--bg);
     min-height: 100vh;

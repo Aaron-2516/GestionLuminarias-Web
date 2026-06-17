@@ -238,7 +238,8 @@
 }
 
 .table-wrapper-lecturas {
-    overflow-x: auto;
+    max-height: 300px;
+    overflow: auto;
     width: 100%;
 }
 
@@ -252,6 +253,12 @@
 .table-lecturas thead {
     background: linear-gradient(135deg, #0f3c78, #1d6fd6);
     color: #ffffff;
+}
+
+.table-lecturas thead th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
 }
 
 .table-lecturas th,

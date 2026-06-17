@@ -66,9 +66,9 @@
 
     <select name="tipo" id="tipo-select" form="form-busqueda" onchange="this.form.submit()">
         <option value="">-- Tipo de luminaria --</option>
-        <option value="LED"{% if selected_tipo == "LED" %} selected{% endif %}>LED</option>
+        <option value="Mercurio"{% if selected_tipo == "Mercurio" %} selected{% endif %}>Mercurio</option>
         <option value="Sodio"{% if selected_tipo == "Sodio" %} selected{% endif %}>Sodio</option>
-        <option value="Fluorescente"{% if selected_tipo == "Fluorescente" %} selected{% endif %}>Fluorescente</option>
+        <option value="LED"{% if selected_tipo == "LED" %} selected{% endif %}>LED</option>
     </select>
 
     <select name="estado" id="estado-select" form="form-busqueda" onchange="this.form.submit()">
@@ -226,7 +226,12 @@
             </select>
 
             <label for="tipo">Tipo: <span class="required">*</span></label>
-            <input type="text" id="tipo" name="tipo" placeholder="Tipo de luminaria" required>
+            <select id="tipo" name="tipo" required>
+                <option value="">-- Seleccione un tipo --</option>
+                <option value="Mercurio">Mercurio</option>
+                <option value="Sodio">Sodio</option>
+                <option value="LED">LED</option>
+            </select>
 
             <label for="red">Red: <span class="required">*</span></label>
             <select id="red" name="red" required>
@@ -265,7 +270,12 @@
             </select>
 
             <label for="editar_tipo_luminaria">Tipo: <span class="required">*</span></label>
-            <input type="text" id="editar_tipo_luminaria" name="tipo" required>
+            <select id="editar_tipo_luminaria" name="tipo" required>
+                <option value="">-- Seleccione un tipo --</option>
+                <option value="Mercurio">Mercurio</option>
+                <option value="Sodio">Sodio</option>
+                <option value="LED">LED</option>
+            </select>
 
             <label for="editar_red_luminaria">Red: <span class="required">*</span></label>
             <select id="editar_red_luminaria" name="red" required>
