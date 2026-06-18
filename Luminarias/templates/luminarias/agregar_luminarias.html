@@ -58,21 +58,21 @@
     </form>
 
     <select name="red" id="red-select" form="form-busqueda" onchange="this.form.submit()">
-        <option value="">-- Red asignada --</option>
+        <option value="">- Seleccione red asignada -</option>
         {% for red in redes %}
         <option value="{{ red.id_red }}"{% if selected_red == red.id_red %} selected{% endif %}>{{ red.nombre_red }}</option>
         {% endfor %}
     </select>
 
     <select name="tipo" id="tipo-select" form="form-busqueda" onchange="this.form.submit()">
-        <option value="">-- Tipo de luminaria --</option>
+        <option value="">- Seleccione tipo de luminaria -</option>
         <option value="Mercurio"{% if selected_tipo == "Mercurio" %} selected{% endif %}>Mercurio</option>
         <option value="Sodio"{% if selected_tipo == "Sodio" %} selected{% endif %}>Sodio</option>
         <option value="LED"{% if selected_tipo == "LED" %} selected{% endif %}>LED</option>
     </select>
 
     <select name="estado" id="estado-select" form="form-busqueda" onchange="this.form.submit()">
-        <option value="">-- Estado --</option>
+        <option value="">- Seleccione estado -</option>
         <option value="activo"{% if selected_estado == "activo" %} selected{% endif %}>Activa</option>
         <option value="inactivo"{% if selected_estado == "inactivo" %} selected{% endif %}>Inactiva</option>
     </select>

@@ -1135,6 +1135,15 @@ def agregar_redes(request):
 
 
 def agregar_zonas(request):
+    tipos_zona_disponibles = [
+        "Residencial",
+        "Espacio abierto",
+        "Zona Recreativa",
+        "Parque",
+        "Vías vehiculares",
+        "Áreas peatonales",
+    ]
+
     if request.method == "POST":
         nombre_zona = request.POST.get("nombre_zona", "").strip()
         tipo_zona = request.POST.get("tipo_zona", "").strip()
@@ -1313,6 +1322,7 @@ def agregar_zonas(request):
         "zonas": zonas_data,
         "redes": Red.objects.order_by("nombre_red"),
         "municipios": Municipio.objects.order_by("nombre_municipio"),
+        "tipos_zona_disponibles": tipos_zona_disponibles,
         "tipos_zona": Zona.objects.order_by("tipo_zona").values_list("tipo_zona", flat=True).distinct(),
         "q": q,
         "selected_tipo": selected_tipo,

@@ -58,7 +58,7 @@
     </form>
 
     <select name="zona" id="zona-select" form="form-busqueda" onchange="this.form.submit()">
-        <option value="">-- Seleccione una zona --</option>
+        <option value="">- Seleccione una zona -</option>
         {% for zona in zonas %}
         <option value="{{ zona.id_zona }}"{% if selected_zona == zona.id_zona %} selected{% endif %}>
             {{ zona.nombre_zona }}
@@ -69,7 +69,7 @@
     </select>
 
     <select name="estado" id="estado-select" form="form-busqueda" onchange="this.form.submit()">
-        <option value="">-- Seleccione un estado --</option>
+        <option value="">- Seleccione un estado -</option>
         <option value="activo"{% if selected_estado == "activo" %} selected{% endif %}>Activo</option>
         <option value="inactivo"{% if selected_estado == "inactivo" %} selected{% endif %}>Inactivo</option>
     </select>
