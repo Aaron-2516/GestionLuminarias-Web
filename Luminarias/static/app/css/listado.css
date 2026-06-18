@@ -663,6 +663,13 @@
     border-left-color: #f59e0b;
 }
 
+.label-opcional {
+    font-size: 0.6rem;
+    color: #6c757d;
+    margin-left: 5px;
+    font-weight: normal;
+}
+
 @keyframes aparecer {
     from {
         opacity: 0;

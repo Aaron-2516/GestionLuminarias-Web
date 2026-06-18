@@ -88,8 +88,9 @@
                 <th>Código</th>
                 <th>Nombre</th>
                 <th>Voltaje</th>
-                <!--<th>Consumo esperado</th>-->
-                <th>Zona</th>
+                <th>Consumo esperado</th>
+                <th>Consumo registrado</th>
+                <!--<th>Zona</th>-->
                 <th>Estado</th>
                 <th>Acciones</th>
             </tr>
@@ -101,14 +102,20 @@
                 <td>{{ red.id_red }}</td>
                 <td>{{ red.nombre_red }}</td>
                 <td>{{ red.voltaje }}</td>
-                <!--<td>{{ red.consumo_esperado }}</td>-->
-
+                <td>{{ red.consumo_esperado }} kWh</td>
                 <td>
+                    {% if red.ultima_lectura %}
+                    {{ red.consumo_registrado }} kWh
+                    {% else %}
+                    Sin lectura
+                    {% endif %}
+                </td>
+                <!--<td>
                     {% for zona in red.zonas %}
                         {{ zona.nombre_zona }}{% if not forloop.last %}, {% endif %}
                     {% empty %}
                         Sin zona
-                    {% endfor %}
+                    {% endfor %}-->
                 </td>
 
                 <td>
@@ -202,8 +209,17 @@
         </div>
 
         <div class="detalle-fila">
-            <span>Consumo Esperado</span>
-            <strong>{{ red_detalle.consumo_esperado }}</strong>
+            <span>Consumo esperado</span>
+            <strong>{{ red_detalle.consumo_esperado }} kWh</strong>
+        </div>
+        <div class="detalle-fila">
+            <span>Consumo registrado</span>
+            <strong>{% if red_detalle.ultima_lectura %}
+                    {{ red_detalle.consumo_registrado }} kWh
+                    {% else %}
+                    Sin lectura
+                    {% endif %}
+                </strong>
         </div>
 
         <div class="detalle-fila">
