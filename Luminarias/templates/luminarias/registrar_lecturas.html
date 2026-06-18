@@ -1,10 +1,11 @@
 {% extends "luminarias/base_tecnicos.html" %}
 {% load static %}
+{% load l10n %}
 
 {% block title %}Registrar Lecturas{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'app/css/registrar_lecturas.css' %}?v=101">
+<link rel="stylesheet" href="{% static 'app/css/registrar_lecturas.css' %}?v=102">
 {% endblock %}
 
 {% block topbar_title %}Registrar Lecturas{% endblock %}
@@ -75,11 +76,11 @@
                             value="{{ red.id_red }}"
                             {% if red_seleccionada == red.id_red %}selected{% elif not red_seleccionada and forloop.first %}selected{% endif %}
                             data-nombre="{{ red.nombre_red }}"
-                            data-voltaje="{{ red.voltaje }}"
-                            data-consumo-esperado="{{ red.consumo_esperado }}"
-                            data-ultima-lectura="{{ red.ultima_lectura|default_if_none:'' }}"
+                            data-voltaje="{{ red.voltaje|unlocalize }}"
+                            data-consumo-esperado="{{ red.consumo_esperado|unlocalize }}"
+                            data-ultima-lectura="{{ red.ultima_lectura|default_if_none:''|unlocalize }}"
                             data-ultima-fecha="{{ red.ultima_fecha|date:'d/m/Y' }}"
-                            data-variacion-ultima="{{ red.variacion_ultima|default_if_none:'' }}"
+                            data-variacion-ultima="{{ red.variacion_ultima|default_if_none:''|unlocalize }}"
                             data-zonas="{{ red.zonas_nombres|escape }}"
                             data-luminarias="{{ red.total_luminarias }}"
                         >
@@ -103,7 +104,7 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="consumo_esperado">Consumo esperado</label>
+                    <label for="consumo_esperado">Consumo esperado mensual</label>
                     <input type="text" id="consumo_esperado" readonly>
                 </div>
 
@@ -225,7 +226,7 @@
 </section>
 
 {% if red_detalle %}
-<section class="panel detail-panel">
+<section id="detalleRed" class="panel detail-panel">
     <div class="panel-head">
         <div>
             <h3>Detalle de la red</h3>
@@ -247,8 +248,8 @@
             <strong>{{ red_detalle.voltaje }}</strong>
         </div>
         <div>
-            <span>Consumo esperado</span>
-            <strong>{{ red_detalle.consumo_esperado }}</strong>
+            <span>Consumo esperado mensual</span>
+            <strong>{{ red_detalle.consumo_esperado }} kWh</strong>
         </div>
     </div>
 </section>
@@ -315,5 +316,40 @@
     consumoInput.addEventListener('input', updateInfo);
     updateInfo();
 })();
+</script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const detalleRed = document.getElementById("detalleRed");
+
+    if (detalleRed) {
+        setTimeout(function () {
+            detalleRed.scrollIntoView({
+                behavior: "smooth",
+                block: "start"
+            });
+        }, 150);
+    }
+});
+</script>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+
+    const alerts = document.querySelectorAll(".alert");
+
+    alerts.forEach((alerta) => {
+
+        setTimeout(() => {
+
+            alerta.style.opacity = "0";
+
+            setTimeout(() => {
+                alerta.remove();
+            }, 300);
+
+        }, 3000);
+
+    });
+
+});
 </script>
 {% endblock content %}

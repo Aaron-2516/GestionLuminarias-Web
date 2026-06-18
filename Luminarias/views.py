@@ -11,7 +11,7 @@ import re
 from datetime import date, timedelta
 
 from .models import Usuario, Rol, Zona, Municipio, AsignacionZona, Red, Luminaria, RegistrarLectura, Crea
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
 def page_view(template_name):
     def view(request):
@@ -42,6 +42,145 @@ def _siguiente_codigo(modelo, prefijo, campo_id):
         codigo = f"{prefijo}{siguiente_numero:03d}"
 
     return codigo
+
+
+# =========================
+# CALCULO DE CONSUMO ESPERADO
+# =========================
+# Basado en la tabla de consumo:
+# Potencia total W = cantidad de lamparas * potencia W
+# Consumo mensual kWh = potencia total W * 12 horas * 30 dias / 1000
+HORAS_FUNCIONAMIENTO_DIARIAS = Decimal("12")
+DIAS_CONSUMO_MENSUAL = Decimal("30")
+MESES_CONSUMO_ANUAL = Decimal("12")
+UMBRAL_VARIACION_CONSUMO = Decimal("10")
+
+
+def _normalizar_numero(valor):
+    return str(valor).strip().replace(",", ".")
+
+
+def _decimal(valor, default="0.00"):
+    if valor is None or str(valor).strip() == "":
+        return Decimal(default)
+
+    try:
+        return Decimal(_normalizar_numero(valor))
+    except (InvalidOperation, ValueError, TypeError):
+        return Decimal(default)
+
+
+def _decimal_requerido(valor):
+    if valor is None or str(valor).strip() == "":
+        raise InvalidOperation
+
+    return Decimal(_normalizar_numero(valor))
+
+
+def _redondear_decimal(valor):
+    return _decimal(valor).quantize(
+        Decimal("0.01"),
+        rounding=ROUND_HALF_UP
+    )
+
+
+def _redondear_decimal_requerido(valor):
+    return _decimal_requerido(valor).quantize(
+        Decimal("0.01"),
+        rounding=ROUND_HALF_UP
+    )
+
+
+def _decimal_a_float(valor):
+    return float(_decimal(valor))
+
+
+def _redondear_float(valor):
+    return float(_redondear_decimal(valor))
+
+
+def _calcular_consumo_esperado_red(red):     #CREADO
+    if not red:
+        return Decimal("0.00")
+
+    potencia_total = red.luminarias.aggregate(
+        total=Sum("potencia")
+    )["total"] or Decimal("0.00")
+
+    consumo_mensual = (
+        _decimal(potencia_total) *
+        HORAS_FUNCIONAMIENTO_DIARIAS *
+        DIAS_CONSUMO_MENSUAL
+    ) / Decimal("1000")
+
+    return _redondear_decimal(consumo_mensual)
+
+
+def _actualizar_consumo_esperado_red(red):    #CREADO
+    if not red:
+        return Decimal("0.00")
+
+    consumo_esperado = _calcular_consumo_esperado_red(red)
+
+    if _decimal(red.consumo_esperado) != consumo_esperado:
+        red.consumo_esperado = consumo_esperado
+        red.save(
+            update_fields=["consumo_esperado"]
+        )
+
+    return consumo_esperado
+
+
+def _variacion_consumo(consumo_actual, consumo_esperado):  #CREADO
+    consumo_actual = _decimal(consumo_actual)
+    consumo_esperado = _decimal(consumo_esperado)
+
+    if consumo_esperado <= 0:
+        return Decimal("0.00")
+
+    variacion = (
+        (consumo_actual - consumo_esperado) /
+        consumo_esperado
+    ) * Decimal("100")
+
+    return _redondear_decimal(variacion)
+
+
+def _datos_estado_red(red, ultima_lectura=None):   #CREADO
+    total_luminarias = red.luminarias.count()
+    luminarias_fallando = red.luminarias.filter(
+        estado=False
+    ).count()
+
+    variacion = (
+        _decimal(ultima_lectura.variacion_consumo)
+        if ultima_lectura
+        else Decimal("0.00")
+    )
+
+    if total_luminarias == 0:
+        estado = "Sin luminarias"
+        estado_clase = "warning"
+
+    elif luminarias_fallando > 0:
+        estado = "Con fallas"
+        estado_clase = "inactivo"
+
+    elif ultima_lectura and abs(variacion) >= UMBRAL_VARIACION_CONSUMO:
+        estado = "Consumo superior al esperado"
+        estado_clase = "warning"
+
+    else:
+        estado = "Activa"
+        estado_clase = "activo"
+
+    return {
+        "estado": estado,
+        "estado_clase": estado_clase,
+        "total_luminarias": total_luminarias,
+        "luminarias_fallando": luminarias_fallando,
+        "variacion": variacion,
+    }
 
 
 def login_view(request):
@@ -120,7 +259,6 @@ def cambiar_contrasena(request):
 
 
 def cambiar_contrasena_primer_acceso(request):
-    """Vista especial para cambiar contraseña en primer acceso de técnicos"""
     usuario_id = request.session.get("usuario_id")
     contrasena_temporal = request.session.get("contrasena_temporal")
 
@@ -460,6 +598,8 @@ def dashboard_supervisor(request):
     )
 
     for red in redes:
+        _actualizar_consumo_esperado_red(red)
+
         ultima_lectura = red.lecturas.order_by(
             "-fecha_lectura"
         ).first()
@@ -603,6 +743,8 @@ def dashboard_tecnico(request):
         ).distinct().order_by("nombre_red")
 
     for red in redes_asignadas:
+        _actualizar_consumo_esperado_red(red)
+
         ultima_lectura = red.lecturas.order_by("-fecha_lectura").first()
         total_red_luminarias = red.luminarias.count()
         fallas_red = red.luminarias.filter(estado=False).count()
@@ -675,7 +817,6 @@ def agregar_redes(request):
     if request.method == "POST":
         nombre_red = request.POST.get("nombre_red", "").strip()
         voltaje = request.POST.get("voltaje", "").strip()
-        # zona_id = request.POST.get("zona", "").strip()
         editar_id = request.POST.get("editar_id", "").strip()
         eliminar_id = request.POST.get("eliminar_id", "").strip()
 
@@ -699,16 +840,34 @@ def agregar_redes(request):
                 )
                 return redirect("agregar_redes")
 
-            red.nombre_red = nombre_red
-            red.voltaje = Decimal(voltaje)
-            red.save()
+            try:
+                red.nombre_red = nombre_red
+                red.voltaje = _redondear_decimal_requerido(
+                    voltaje
+                )
+                red.save(
+                    update_fields=[
+                        "nombre_red",
+                        "voltaje"
+                    ]
+                )
 
-            messages.success(
-                request,
-                f"Red {red.nombre_red} actualizada correctamente"
-            )
+                _actualizar_consumo_esperado_red(red)
+
+                messages.success(
+                    request,
+                    f"Red {red.nombre_red} actualizada correctamente"
+                )
+
+            except (InvalidOperation, ValueError):
+                messages.error(
+                    request,
+                    "El voltaje ingresado no es válido"
+                )
+
             return redirect("agregar_redes")
-# Eliminar Red
+
+        # Eliminar Red
         if eliminar_id:
             red = Red.objects.filter(
                 id_red=eliminar_id
@@ -719,18 +878,27 @@ def agregar_redes(request):
                     request,
                     "La red no existe"
                 )
-            elif red.zonas.exists() or red.luminarias.exists() or red.lecturas.exists():
+
+            elif (
+                red.zonas.exists()
+                or red.luminarias.exists()
+                or red.lecturas.exists()
+            ):
                 messages.error(
                     request,
                     "No se puede eliminar la red porque tiene relaciones asociadas"
                 )
+
             else:
                 try:
+                    nombre = red.nombre_red
                     red.delete()
+
                     messages.success(
                         request,
-                        f"Red {red.nombre_red} eliminada correctamente"
+                        f"Red {nombre} eliminada correctamente"
                     )
+
                 except IntegrityError:
                     messages.error(
                         request,
@@ -739,49 +907,43 @@ def agregar_redes(request):
 
             return redirect("agregar_redes")
 
-        ###### Agregar Nueva Red
-        # if not nombre_red or not voltaje or not zona_id:
+        # Agregar Nueva Red
+        if not nombre_red or not voltaje:
+            messages.error(
+                request,
+                "Todos los campos son obligatorios"
+            )
+            return redirect("agregar_redes")
 
-        #     messages.error(
-        #         request,
-        #         "Todos los campos son obligatorios"
-        #     )
-        #     return redirect("agregar_redes")
-        
-        # Agregar Nueva Red FORMATO ID RED001, RED002, etc
         nuevo_codigo = _siguiente_codigo(
             Red,
             "RED",
             "id_red"
         )
-        try:
-            # zona = Zona.objects.get(
-            #     id_zona=zona_id
-            # )
-            usuario_actual = Usuario.objects.filter(
-                id_usuario=request.session.get("usuario_id")
-            ).first()
-            # if zona.red:
-            #     messages.error(
-            #         request,
-            #         "La zona ya tiene una red asignada"
-            #     )
-            #     return redirect("agregar_redes")
 
+        try:
             nueva_red = Red.objects.create(
                 id_red=nuevo_codigo,
                 nombre_red=nombre_red,
-                voltaje=Decimal(voltaje),
+                voltaje=_redondear_decimal_requerido(
+                    voltaje
+                ),
                 consumo_esperado=Decimal("0.00"),
             )
 
-            # zona.red = nueva_red
-            # zona.save()
+            _actualizar_consumo_esperado_red(nueva_red)
 
             messages.success(
                 request,
                 f"Red {nueva_red.nombre_red} agregada correctamente"
             )
+
+        except (InvalidOperation, ValueError):
+            messages.error(
+                request,
+                "El voltaje ingresado no es válido"
+            )
+
         except Exception as e:
             messages.error(
                 request,
@@ -790,14 +952,14 @@ def agregar_redes(request):
 
         return redirect("agregar_redes")
 
-   # Filtros
+    # =========================
+    # FILTROS
+    # =========================
     q = request.GET.get("q", "").strip()
     selected_zona = request.GET.get("zona", "").strip()
     selected_estado = request.GET.get("estado", "").strip()
     detalle_id = request.GET.get("detalle", "").strip()
-    usuario_actual_id = request.session.get("usuario_id")
 
-    porcentaje_alerta = 10
     redes_query = Red.objects.prefetch_related(
         "zonas",
         "luminarias",
@@ -807,11 +969,11 @@ def agregar_redes(request):
         "nombre_red"
     )
 
-    # Busqueda
+    # Búsqueda
     if q:
         redes_query = redes_query.filter(
-            Q(id_red__icontains=q) |
-            Q(nombre_red__icontains=q)
+            Q(id_red__icontains=q)
+            | Q(nombre_red__icontains=q)
         )
 
     # Filtro Zona
@@ -820,65 +982,73 @@ def agregar_redes(request):
             zonas__id_zona=selected_zona
         ).distinct()
 
-    # Datos Redes
+    # =========================
+    # DATOS REDES
+    # =========================
     redes_data = []
+
     for red in redes_query:
+        consumo_esperado = _actualizar_consumo_esperado_red(
+            red
+        )
+
         ultima_lectura = red.lecturas.order_by(
-            "-fecha_lectura"
+            "-fecha_lectura",
+            "-id_lectura"
         ).first()
 
-        total_luminarias = red.luminarias.count()
-
-        luminarias_fallando = red.luminarias.filter(
-            estado=False
-        ).count()
-
-        variacion = 0
-
-        if ultima_lectura:
-            variacion = ultima_lectura.variacion_consumo
-        if total_luminarias == 0:
-            estado = "Sin luminarias"
-            estado_clase = "warning"
-        elif luminarias_fallando > 0:
-            estado = "Con fallas"
-            estado_clase = "inactivo"
-        elif (
-            ultima_lectura and
-            abs(variacion) >= porcentaje_alerta
-        ):
-            estado = "Consumo superior al esperado"
-            estado_clase = "warning"
-        else:
-            estado = "Activa"
-            estado_clase = "activo"
+        estado_data = _datos_estado_red(
+            red,
+            ultima_lectura
+        )
 
         redes_data.append({
             "id_red": red.id_red,
             "nombre_red": red.nombre_red,
             "voltaje": red.voltaje,
-            "consumo_esperado": red.consumo_esperado,
-            "zonas": red.zonas.all(),
-            "estado": estado,
-            "estado_clase": estado_clase,
-            "total_luminarias": total_luminarias,
-            "luminarias_fallando": luminarias_fallando,
-            "variacion": variacion,
+            "consumo_esperado": consumo_esperado,
+            "ultima_lectura": ultima_lectura,
+            "consumo_registrado": (
+                ultima_lectura.consumo_actual
+                if ultima_lectura
+                else None
+            ),
+            "fecha_ultima_lectura": (
+                ultima_lectura.fecha_lectura
+                if ultima_lectura
+                else None
+            ),
+            "variacion_ultima": (
+                ultima_lectura.variacion_consumo
+                if ultima_lectura
+                else None
+            ),
+            "zonas": list(red.zonas.all()),
+            "estado": estado_data["estado"],
+            "estado_clase": estado_data["estado_clase"],
+            "total_luminarias": estado_data["total_luminarias"],
+            "luminarias_fallando": estado_data["luminarias_fallando"],
+            "variacion": estado_data["variacion"],
         })
 
-    # Filtro Estado
+    # =========================
+    # FILTRO ESTADO
+    # =========================
     if selected_estado == "activo":
         redes_data = [
             red for red in redes_data
-            if red["estado"] == "Activa"
+            if red["estado_clase"] == "activo"
         ]
+
     elif selected_estado == "inactivo":
         redes_data = [
             red for red in redes_data
-            if red["estado"] != "Activa"
+            if red["estado_clase"] != "activo"
         ]
 
-    # Cargar Zonas para Filtro y Modal
+    # =========================
+    # ZONAS PARA FILTRO Y MODAL
+    # =========================
     zonas = Zona.objects.select_related(
         "red"
     ).all().order_by(
@@ -893,45 +1063,44 @@ def agregar_redes(request):
         "nombre_zona"
     )
 
-    # Cards
-    total_redes = Red.objects.count()
-
-    redes_con_zona = Red.objects.filter(
-        zonas__isnull=False
-    ).distinct().count()
-    redes_sin_zona = Red.objects.filter(
-        zonas__isnull=True
-    ).count()
-
-    redes_inactivas = 0
-
-    for red in Red.objects.prefetch_related(
+    # =========================
+    # CARDS / MÉTRICAS
+    # =========================
+    redes_metricas = Red.objects.prefetch_related(
+        "zonas",
         "luminarias",
         "lecturas"
-    ):
+    )
+
+    total_redes = redes_metricas.count()
+    redes_con_zona = 0
+    redes_sin_zona = 0
+    redes_inactivas = 0
+
+    for red in redes_metricas:
+        _actualizar_consumo_esperado_red(red)
+
         ultima_lectura = red.lecturas.order_by(
-            "-fecha_lectura"
+            "-fecha_lectura",
+            "-id_lectura"
         ).first()
-        total_luminarias = red.luminarias.count()
-        luminarias_fallando = red.luminarias.filter(
-            estado=False
-        ).count()
-        variacion = (
-            ultima_lectura.variacion_consumo
-            if ultima_lectura else 0
+
+        estado_data = _datos_estado_red(
+            red,
+            ultima_lectura
         )
 
-        if (
-            total_luminarias == 0 or
-            luminarias_fallando > 0 or
-            (
-                ultima_lectura and
-                abs(variacion) >= porcentaje_alerta
-            )
-        ):
+        if red.zonas.exists():
+            redes_con_zona += 1
+        else:
+            redes_sin_zona += 1
+
+        if estado_data["estado_clase"] != "activo":
             redes_inactivas += 1
 
-    # Detalle Red
+    # =========================
+    # DETALLE RED
+    # =========================
     red_detalle = None
 
     if detalle_id:
@@ -957,6 +1126,7 @@ def agregar_redes(request):
         "redes_sin_zona": redes_sin_zona,
         "redes_inactivas": redes_inactivas,
     }
+
     return render(
         request,
         "luminarias/agregar_redes.html",
@@ -1198,7 +1368,7 @@ def agregar_luminarias(request):
                 messages.error(request, "La luminaria no existe")
                 return redirect("agregar_luminarias")
 
-            luminaria.potencia = Decimal(potencia)
+            luminaria.potencia = _redondear_decimal_requerido(potencia)
             luminaria.estado = estado_bool
             luminaria.tipo = tipo
             luminaria.red = red
@@ -1210,7 +1380,7 @@ def agregar_luminarias(request):
 
         luminaria = Luminaria.objects.create(
             id_luminaria=_siguiente_codigo(Luminaria, "LUM", "id_luminaria"),
-            potencia=Decimal(potencia),
+            potencia=_redondear_decimal_requerido(potencia),
             estado=estado_bool,
             tipo=tipo,
             red=red,
@@ -1333,16 +1503,6 @@ def _periodo_fechas(periodo, mes=None):
         siguiente_mes = date(fecha_inicio.year, fecha_inicio.month + 1, 1)
     return fecha_inicio, siguiente_mes - timedelta(days=1)
 
-# Convierte un valor numerico a float sirve para poder sumar, dividir y comparar sin problemas.
-def _to_float(value):
-    if value is None:
-        return 0.0
-    return float(value)
-
-# Redondea numeros a 2 decimales para que el reporte se vea limpio.
-def _round(value):
-    return round(_to_float(value), 2)
-
 
 def _zona_nombre(red):
     if not red:
@@ -1365,7 +1525,7 @@ def _estado_red(red, variacion):
         
         return "sin_luminarias"
 
-    if fallas > 0 or abs(_to_float(variacion)) >= 10:
+    if fallas > 0 or abs(_decimal_a_float(variacion)) >= 10:
         return "alerta"
     return "ok"
 
@@ -1398,14 +1558,14 @@ def _lecturas_filtradas(fecha_inicio, fecha_fin, municipio_id):
 def _kpis_desde_rows(rows, kwh_index, lums_index, var_index=None):
 
     # Sumamos todos los consumos de la columna indicada.
-    total_kwh = sum(_to_float(row[kwh_index]) for row in rows)
+    total_kwh = sum(_decimal_a_float(row[kwh_index]) for row in rows)
 
     # Sumamos todas las luminarias de la columna indicada.
-    total_lums = sum(int(_to_float(row[lums_index])) for row in rows)
+    total_lums = sum(int(_decimal_a_float(row[lums_index])) for row in rows)
 
     # Guardamos solo las variaciones validas.
     variaciones = [
-        _to_float(row[var_index])
+        _decimal_a_float(row[var_index])
         for row in rows
         if var_index is not None and row[var_index] not in ("", None)
     ]
@@ -1415,9 +1575,9 @@ def _kpis_desde_rows(rows, kwh_index, lums_index, var_index=None):
     variacion = sum(variaciones) / len(variaciones) if variaciones else 0
 
     return {
-        "kwh": _round(total_kwh),
+        "kwh": _redondear_float(total_kwh),
         "lums": total_lums,
-        "var": _round(variacion),
+        "var": _redondear_float(variacion),
         "varClass": "text-danger" if abs(variacion) >= 10 else "text-success",
     }
 
@@ -1426,17 +1586,17 @@ def _kpis_desde_rows(rows, kwh_index, lums_index, var_index=None):
 def _barras(rows, label_index, value_index):
     # Esta funcion prepara los datos para una grafica de barras.
     
-    max_value = max([_to_float(row[value_index]) for row in rows] or [0])
+    max_value = max([_decimal_a_float(row[value_index]) for row in rows] or [0])
     if max_value <= 0:
         return []
 
     return [
         {
             "label": str(row[label_index]),
-            "val": _round(row[value_index]),
-            "pct": min(100, _round((_to_float(row[value_index]) / max_value) * 100)),
+            "val": _redondear_float(row[value_index]),
+            "pct": min(100, _redondear_float((_decimal_a_float(row[value_index]) / max_value) * 100)),
         }
-        for row in sorted(rows, key=lambda row: _to_float(row[value_index]), reverse=True)[:8]
+        for row in sorted(rows, key=lambda row: _decimal_a_float(row[value_index]), reverse=True)[:8]
     ]
 
 
@@ -1509,6 +1669,8 @@ def _generar_reporte_data(request):
             redes = redes.filter(zonas__municipio_id=municipio_id).distinct()
 
         for red in redes:
+            _actualizar_consumo_esperado_red(red)
+
             lecturas_red = lecturas.filter(red=red)
             consumo = lecturas_red.aggregate(total=Sum("consumo_actual"))["total"] or Decimal("0")
 
@@ -1519,14 +1681,14 @@ def _generar_reporte_data(request):
             rows.append([
                 red.nombre_red,
                 _zona_nombre(red),
-                _round(consumo),
-                _round(red.consumo_esperado),
-                _round(variacion_val),
+                _redondear_float(consumo),
+                _redondear_float(red.consumo_esperado),
+                _redondear_float(variacion_val),
                 luminarias,
                 _estado_red(red, variacion_val),
             ])
 
-        totals = ["Total", "", _round(sum(row[2] for row in rows)), "", "", sum(row[5] for row in rows), ""]
+        totals = ["Total", "", _redondear_float(sum(row[2] for row in rows)), "", "", sum(row[5] for row in rows), ""]
         kpis = _kpis_desde_rows(rows, 2, 5, 4)
         barras = _barras(rows, 0, 2)
 
@@ -1569,12 +1731,12 @@ def _generar_reporte_data(request):
                 luminaria.id_luminaria,
                 red.nombre_red if red else "Sin red",
                 _zona_nombre(red),
-                _round(luminaria.potencia),
-                _round(consumo_estimado),
+                _redondear_float(luminaria.potencia),
+                _redondear_float(consumo_estimado),
                 "Activa" if luminaria.estado else "Con falla",
             ])
 
-        totals = ["Total", "", "", _round(sum(row[3] for row in rows)), _round(sum(row[4] for row in rows)), ""]
+        totals = ["Total", "", "", _redondear_float(sum(row[3] for row in rows)), _redondear_float(sum(row[4] for row in rows)), ""]
         kpis = {"kwh": totals[4], "lums": len(rows), "var": 0, "varClass": ""}
         barras = _barras(rows, 0, 4)
 
@@ -1606,11 +1768,11 @@ def _generar_reporte_data(request):
                 len(zonas),
                 len(red_ids),
                 luminarias,
-                _round(consumo),
-                _round(ultima.variacion_consumo if ultima else 0),
+                _redondear_float(consumo),
+                _redondear_float(ultima.variacion_consumo if ultima else 0),
             ])
 
-        totals = ["Total", sum(row[1] for row in rows), sum(row[2] for row in rows), sum(row[3] for row in rows), _round(sum(row[4] for row in rows)), ""]
+        totals = ["Total", sum(row[1] for row in rows), sum(row[2] for row in rows), sum(row[3] for row in rows), _redondear_float(sum(row[4] for row in rows)), ""]
         kpis = _kpis_desde_rows(rows, 4, 3, 5)
         barras = _barras(rows, 0, 4)
 
@@ -1643,13 +1805,13 @@ def _generar_reporte_data(request):
                 zona.nombre_zona,
                 zona.municipio.nombre_municipio if zona.municipio else "Sin municipio",
                 zona.red.nombre_red if zona.red else "Sin red",
-                _round(consumo),
+                _redondear_float(consumo),
                 luminarias,
-                _round(ultima.variacion_consumo if ultima else 0),
+                _redondear_float(ultima.variacion_consumo if ultima else 0),
             ])
 
         
-        totals = ["Total", "", "", _round(sum(row[3] for row in rows)), sum(row[4] for row in rows), ""]
+        totals = ["Total", "", "", _redondear_float(sum(row[3] for row in rows)), sum(row[4] for row in rows), ""]
         kpis = _kpis_desde_rows(rows, 3, 4, 5)
         barras = _barras(rows, 0, 3)
 
@@ -1676,7 +1838,15 @@ def registrar_lecturas(request):
         "zonas",
         "luminarias",
         "lecturas",
-    ).order_by("nombre_red")
+    ).order_by(
+        "nombre_red"
+    )
+
+    red_seleccionada = (
+        request.POST.get("red", "").strip()
+        if request.method == "POST"
+        else request.GET.get("red", "").strip()
+    )
 
     if request.method == "POST":
         red_id = request.POST.get("red", "").strip()
@@ -1684,88 +1854,185 @@ def registrar_lecturas(request):
         consumo_actual_raw = request.POST.get("consumo_actual", "").strip()
 
         if not red_id:
-            messages.error(request, "Debes seleccionar una red.")
+            messages.error(
+                request,
+                "Debes seleccionar una red."
+            )
+
         elif not fecha_lectura_raw:
-            messages.error(request, "Debes indicar la fecha de la lectura.")
+            messages.error(
+                request,
+                "Debes indicar la fecha de la lectura."
+            )
+
         elif not consumo_actual_raw:
-            messages.error(request, "Debes indicar el consumo actual.")
+            messages.error(
+                request,
+                "Debes indicar el consumo actual."
+            )
+
         else:
-            red = redes_disponibles.filter(id_red=red_id).first()
+            red = redes_disponibles.filter(
+                id_red=red_id
+            ).first()
 
             if not red:
-                messages.error(request, "La red seleccionada no está disponible para registrar lecturas.")
+                messages.error(
+                    request,
+                    "La red seleccionada no está disponible para registrar lecturas."
+                )
+
             else:
                 try:
-                    fecha_lectura = date.fromisoformat(fecha_lectura_raw)
-                    consumo_actual = Decimal(consumo_actual_raw)
-                except (ValueError, ArithmeticError):
-                    messages.error(request, "La fecha o el consumo ingresados no son válidos.")
+                    fecha_lectura = date.fromisoformat(
+                        fecha_lectura_raw
+                    )
+                    consumo_actual = _decimal_requerido(
+                        consumo_actual_raw
+                    )
+
+                except (ValueError, InvalidOperation):
+                    messages.error(
+                        request,
+                        "La fecha o el consumo ingresados no son válidos."
+                    )
+
                 else:
-                    lectura_mensual = RegistrarLectura.objects.filter(
-                        red=red,
-                        fecha_lectura__year=fecha_lectura.year,
-                        fecha_lectura__month=fecha_lectura.month,
-                    ).exists()
-
-                    if lectura_mensual:
-                        messages.error(request, "Ya existe una lectura registrada para esta red en ese mes.")
-                    else:
-                        consumo_esperado = red.consumo_esperado or Decimal("0")
-                        if consumo_esperado > 0:
-                            variacion_consumo = ((consumo_actual - consumo_esperado) / consumo_esperado) * Decimal("100")
-                        else:
-                            variacion_consumo = Decimal("0")
-
-                        nueva_lectura = RegistrarLectura.objects.create(
-                            id_lectura=_siguiente_codigo(RegistrarLectura, "LEC", "id_lectura"),
-                            red=red,
-                            fecha_lectura=fecha_lectura,
-                            consumo_actual=consumo_actual,
-                            variacion_consumo=variacion_consumo,
+                    if consumo_actual < 0:
+                        messages.error(
+                            request,
+                            "El consumo actual no puede ser negativo."
                         )
 
-                        if usuario_id:
-                            usuario = Usuario.objects.filter(id_usuario=usuario_id).first()
-                            if usuario:
-                                Crea.objects.create(usuario=usuario, lectura=nueva_lectura)
+                    else:
+                        lectura_mensual = RegistrarLectura.objects.filter(
+                            red=red,
+                            fecha_lectura__year=fecha_lectura.year,
+                            fecha_lectura__month=fecha_lectura.month,
+                        ).exists()
 
-                        messages.success(request, "Lectura registrada correctamente.")
-                        return redirect("registrar_lecturas")
+                        if lectura_mensual:
+                            messages.error(
+                                request,
+                                "Ya existe una lectura registrada para esta red en ese mes."
+                            )
+
+                        else:
+                            consumo_esperado = _actualizar_consumo_esperado_red(
+                                red
+                            )
+
+                            variacion_consumo = _variacion_consumo(
+                                consumo_actual,
+                                consumo_esperado
+                            )
+
+                            nueva_lectura = RegistrarLectura.objects.create(
+                                id_lectura=_siguiente_codigo(
+                                    RegistrarLectura,
+                                    "LEC",
+                                    "id_lectura"
+                                ),
+                                red=red,
+                                fecha_lectura=fecha_lectura,
+                                consumo_actual=_redondear_decimal(consumo_actual),
+                                variacion_consumo=variacion_consumo,
+                            )
+
+                            if usuario_id:
+                                usuario = Usuario.objects.filter(
+                                    id_usuario=usuario_id
+                                ).first()
+
+                                if usuario:
+                                    Crea.objects.create(
+                                        usuario=usuario,
+                                        lectura=nueva_lectura
+                                    )
+
+                            messages.success(
+                                request,
+                                "Lectura registrada correctamente."
+                            )
+                            return redirect("registrar_lecturas")
 
     detalle_id = request.GET.get("detalle", "").strip()
     red_detalle = None
 
     if detalle_id:
-        red_detalle = redes_disponibles.filter(id_red=detalle_id).first()
+        red_detalle = redes_disponibles.filter(
+            id_red=detalle_id
+        ).first()
 
-    lecturas = RegistrarLectura.objects.select_related("red").order_by("-fecha_lectura", "-id_lectura")
+        if red_detalle:
+            _actualizar_consumo_esperado_red(red_detalle)
+
+    lecturas = RegistrarLectura.objects.select_related(
+        "red"
+    ).order_by(
+        "-fecha_lectura",
+        "-id_lectura"
+    )
 
     total_lecturas = lecturas.count()
-    lecturas_hoy = lecturas.filter(fecha_lectura=hoy).count()
+    lecturas_hoy = lecturas.filter(
+        fecha_lectura=hoy
+    ).count()
     total_redes = redes_disponibles.count()
 
-    variacion_total = lecturas.aggregate(total=Sum("variacion_consumo"))["total"] or Decimal("0")
-    promedio_variacion = variacion_total / total_lecturas if total_lecturas else Decimal("0")
+    variacion_total = lecturas.aggregate(
+        total=Sum("variacion_consumo")
+    )["total"] or Decimal("0.00")
+
+    promedio_variacion = (
+        variacion_total / total_lecturas
+        if total_lecturas
+        else Decimal("0.00")
+    )
 
     lecturas_recientes = []
+
     for lectura in lecturas[:10]:
+        variacion = _decimal(lectura.variacion_consumo)
+
+        if abs(variacion) >= UMBRAL_VARIACION_CONSUMO:
+            var_clase = "warning"
+        elif variacion < 0:
+            var_clase = "success"
+        else:
+            var_clase = "danger"
+
         lecturas_recientes.append({
             "lectura": lectura,
-            "var_clase": "warning" if abs(lectura.variacion_consumo) >= 10 else ("success" if lectura.variacion_consumo < 0 else "danger"),
+            "var_clase": var_clase,
         })
 
     redes_formulario = []
+
     for red in redes_disponibles:
-        ultima_lectura = red.lecturas.order_by("-fecha_lectura", "-id_lectura").first()
+        consumo_esperado = _actualizar_consumo_esperado_red(
+            red
+        )
+
+        ultima_lectura = red.lecturas.order_by(
+            "-fecha_lectura",
+            "-id_lectura"
+        ).first()
+
+        zonas = list(red.zonas.all())
+
         redes_formulario.append({
             "id_red": red.id_red,
             "nombre_red": red.nombre_red,
             "voltaje": red.voltaje,
-            "consumo_esperado": red.consumo_esperado,
+            "consumo_esperado": consumo_esperado,
             "ultima_lectura": ultima_lectura.consumo_actual if ultima_lectura else None,
             "ultima_fecha": ultima_lectura.fecha_lectura if ultima_lectura else None,
             "variacion_ultima": ultima_lectura.variacion_consumo if ultima_lectura else None,
-            "zonas": list(red.zonas.all()),
+            "zonas": zonas,
+            "zonas_nombres": ", ".join(
+                zona.nombre_zona for zona in zonas
+            ) or "Sin zona",
             "total_luminarias": red.luminarias.count(),
         })
 
@@ -1778,10 +2045,15 @@ def registrar_lecturas(request):
         "lecturas_recientes": lecturas_recientes,
         "red_detalle": red_detalle,
         "fecha_por_defecto": hoy,
-        "red_seleccionada": request.POST.get("red", "").strip() if request.method == "POST" else request.GET.get("red", "").strip(),
+        "red_seleccionada": red_seleccionada,
     }
 
-    return render(request, "luminarias/registrar_lecturas.html", contexto)
+    return render(
+        request,
+        "luminarias/registrar_lecturas.html",
+        contexto
+    )
+
 
 base = page_view("base")
 base_supervisor = page_view("base_supervisor")
