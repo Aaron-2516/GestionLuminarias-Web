@@ -58,21 +58,21 @@
     </form>
 
     <select name="tipo" id="tipo-select" form="form-busqueda" onchange="this.form.submit()">
-        <option value="">-- Tipo de zona --</option>
-        {% for tipo in tipos_zona %}
+        <option value="">- Seleccione tipo de zona -</option>
+        {% for tipo in tipos_zona_disponibles %}
         <option value="{{ tipo }}"{% if selected_tipo == tipo %} selected{% endif %}>{{ tipo }}</option>
         {% endfor %}
     </select>
 
     <select name="red" id="red-select" form="form-busqueda" onchange="this.form.submit()">
-        <option value="">-- Red asignada --</option>
+        <option value="">- Seleccione red asignada -</option>
         {% for red in redes %}
         <option value="{{ red.id_red }}"{% if selected_red == red.id_red %} selected{% endif %}>{{ red.nombre_red }}</option>
         {% endfor %}
     </select>
 
     <select name="municipio" id="municipio-select" form="form-busqueda" onchange="this.form.submit()">
-        <option value="">-- Municipio --</option>
+        <option value="">- Seleccione municipio -</option>
         {% for municipio in municipios %}
         <option value="{{ municipio.id_municipio }}"{% if selected_municipio == municipio.id_municipio %} selected{% endif %}>{{ municipio.nombre_municipio }}</option>
         {% endfor %}
@@ -259,7 +259,12 @@
             <input type="text" id="nombre_zona" name="nombre_zona" placeholder="Nombre de la zona" required>
 
             <label for="tipo_zona">Tipo de Zona: <span class="required">*</span></label>
-            <input type="text" id="tipo_zona" name="tipo_zona" placeholder="Ej. Residencial" required>
+            <select id="tipo_zona" name="tipo_zona" required>
+                <option value="">-- Seleccione un tipo de zona --</option>
+                {% for tipo in tipos_zona_disponibles %}
+                <option value="{{ tipo }}">{{ tipo }}</option>
+                {% endfor %}
+            </select>
 
             <label for="red">Red Asignada: <span class="required">*</span></label>
             <select id="red" name="red" required>
@@ -296,7 +301,12 @@
             <input type="text" id="editar_nombre_zona" name="nombre_zona" required>
 
             <label for="editar_tipo_zona">Tipo de Zona: <span class="required">*</span></label>
-            <input type="text" id="editar_tipo_zona" name="tipo_zona" required>
+            <select id="editar_tipo_zona" name="tipo_zona" required>
+                <option value="">-- Seleccione un tipo de zona --</option>
+                {% for tipo in tipos_zona_disponibles %}
+                <option value="{{ tipo }}">{{ tipo }}</option>
+                {% endfor %}
+            </select>
 
             <label for="editar_red">Red Asignada: <span class="required">*</span></label>
             <select id="editar_red" name="red" required>
