@@ -16,7 +16,6 @@ media/
 # Selenium test
 reportes_pruebas/
 pruebas_selenium.py
-.agents/
 documentacion/
 
 # Virtual environments
