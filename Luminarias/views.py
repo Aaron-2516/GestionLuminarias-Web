@@ -327,14 +327,13 @@ def cerrar_sesion(request):
 def agregar_tecnicos(request):
     abrir_modal = None
 
-    # Agregar / Editar Tecnico / Eliminar Tecnico
+    # Agregar / Editar Tecnico
     if request.method == "POST":
         nombre = request.POST.get("nombre_usuario", "").strip()
         apellido = request.POST.get("apellido_usuario", "").strip()
         telefono = request.POST.get("telefono", "").strip()
         contrasena = request.POST.get("contrasena", "").strip()
         editar_id = request.POST.get("editar_id", "").strip()
-        eliminar_id = request.POST.get("eliminar_id", "").strip()
         estado = request.POST.get("estado", "").strip()
 
         zona_ids = []
@@ -344,41 +343,6 @@ def agregar_tecnicos(request):
              zona_ids = request.POST.getlist(
                  "zona_agregar"
             )
-
-        # Eliminar Tecnico
-        if eliminar_id:
-            tecnico = Usuario.objects.filter(
-                id_usuario=eliminar_id,
-                rol_id=2
-            ).first()
-
-            if not tecnico:
-                messages.error(
-                    request,
-                    "El técnico no existe"
-                )
-            elif tecnico.zonas_asignadas.exists():
-                messages.error(
-                    request,
-                    f"No se puede eliminar el técnico {tecnico.nombre_usuario} {tecnico.apellido_usuario} porque tiene zonas asignadas"
-                )
-            else:
-                try:
-                    tecnico.delete()
-                    messages.success(
-                        request,
-                        f"Técnico eliminado {tecnico.nombre_usuario} {tecnico.apellido_usuario} correctamente"
-                    )
-                except IntegrityError:
-                    messages.error(
-                        request,
-                        f"No se puede eliminar el técnico {tecnico.nombre_usuario} {tecnico.apellido_usuario} porque tiene dependencias registradas"
-                    )
-
-            return redirect(
-                "agregar_tecnicos"
-            )
-
         # Validar Telefono
         if not telefono.isdigit() or len(telefono) != 8:
             messages.error(
@@ -813,12 +777,11 @@ def dashboard_tecnico(request):
 
 
 def agregar_redes(request):
-    # Agregar / Editar Red / Eliminar Red
+    # Agregar / Editar Red
     if request.method == "POST":
         nombre_red = request.POST.get("nombre_red", "").strip()
         voltaje = request.POST.get("voltaje", "").strip()
         editar_id = request.POST.get("editar_id", "").strip()
-        eliminar_id = request.POST.get("eliminar_id", "").strip()
 
         # Editar Red
         if editar_id:
@@ -864,46 +827,6 @@ def agregar_redes(request):
                     request,
                     "El voltaje ingresado no es válido"
                 )
-
-            return redirect("agregar_redes")
-
-        # Eliminar Red
-        if eliminar_id:
-            red = Red.objects.filter(
-                id_red=eliminar_id
-            ).first()
-
-            if not red:
-                messages.error(
-                    request,
-                    "La red no existe"
-                )
-
-            elif (
-                red.zonas.exists()
-                or red.luminarias.exists()
-                or red.lecturas.exists()
-            ):
-                messages.error(
-                    request,
-                    "No se puede eliminar la red porque tiene relaciones asociadas"
-                )
-
-            else:
-                try:
-                    nombre = red.nombre_red
-                    red.delete()
-
-                    messages.success(
-                        request,
-                        f"Red {nombre} eliminada correctamente"
-                    )
-
-                except IntegrityError:
-                    messages.error(
-                        request,
-                        f"No se puede eliminar la red {red.nombre_red} porque tiene dependencias registradas"
-                    )
 
             return redirect("agregar_redes")
 
@@ -1150,29 +1073,6 @@ def agregar_zonas(request):
         red_id = request.POST.get("red", "").strip()
         municipio_id = request.POST.get("municipio", "").strip()
         editar_id = request.POST.get("editar_id", "").strip()
-        eliminar_id = request.POST.get("eliminar_id", "").strip()
-
-        if eliminar_id:
-            zona = Zona.objects.filter(id_zona=eliminar_id).select_related("red").first()
-
-            if not zona:
-                messages.error(request, "La zona no existe")
-            elif zona.red_id or zona.tecnicos_asignados.exists():
-                messages.error(
-                    request,
-                    "No se puede eliminar la zona porque tiene relaciones asociadas"
-                )
-            else:
-                try:
-                    zona.delete()
-                    messages.success(request, "Zona eliminada correctamente")
-                except IntegrityError:
-                    messages.error(
-                        request,
-                        "No se puede eliminar la zona porque tiene dependencias registradas"
-                    )
-
-            return redirect("agregar_zonas")
 
         if not nombre_zona or not tipo_zona:
             messages.error(request, "El nombre y el tipo de la zona son obligatorios")
@@ -1347,19 +1247,8 @@ def agregar_luminarias(request):
         red_id = request.POST.get("red", "").strip()
         fecha_instalacion = request.POST.get("fecha_instalacion", "").strip()
         editar_id = request.POST.get("editar_id", "").strip()
-        eliminar_id = request.POST.get("eliminar_id", "").strip()
-
-        if eliminar_id:
-            luminaria = Luminaria.objects.filter(id_luminaria=eliminar_id).first()
-
-            if not luminaria:
-                messages.error(request, "La luminaria no existe")
-            else:
-                luminaria.delete()
-                messages.success(request, "Luminaria eliminada correctamente")
-
-            return redirect("agregar_luminarias")
-
+        
+        
         if not potencia or not estado or not tipo or not red_id or not fecha_instalacion:
             messages.error(request, "Todos los campos son obligatorios")
             return redirect("agregar_luminarias")

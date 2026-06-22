@@ -138,11 +138,6 @@
                     >
                         Editar
                     </button>
-                    <form method="POST" class="form-eliminar">
-                        {% csrf_token %}
-                        <input type="hidden" name="eliminar_id" value="{{ luminaria.id_luminaria }}">
-                        <button type="submit" class="btn-eliminar">Eliminar</button>
-                    </form>
                 </td>
             </tr>
             {% empty %}

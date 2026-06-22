@@ -13,6 +13,12 @@ staticfiles/
 media/
 *.log
 
+# Selenium test
+reportes_pruebas/
+pruebas_selenium.py
+.agents/
+documentacion/
+
 # Virtual environments
 venv/
 .venv/
