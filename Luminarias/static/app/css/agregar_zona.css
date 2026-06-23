@@ -519,6 +519,73 @@
     }
 }
 
+.table-zonas td form {
+    margin: 0;
+}
+
+.btn-ver-zona,
+.btn-eliminar {
+    min-width: 72px;
+    padding: 5px 10px;
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 10px;
+    font-weight: 700;
+    transition: all 0.2s ease;
+}
+
+.btn-ver-zona {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+
+.btn-ver-zona:hover {
+    background: #1d4ed8;
+    color: #ffffff;
+}
+
+.btn-eliminar {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.btn-eliminar:hover {
+    background: #dc2626;
+    color: #ffffff;
+}
+
+.form-ver-detalle,
+.form-eliminar {
+    margin: 0;
+}
+
+@media (max-width: 768px) {
+    .table-zonas {
+        font-size: 12px;
+        min-width: 700px;
+    }
+
+    .table-zonas th,
+    .table-zonas td {
+        padding: 9px 10px;
+    }
+
+    .table-zonas .acciones {
+        gap: 8px;
+    }
+
+    .detalle-zonas-hero {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .detalle-fila {
+        grid-template-columns: 1fr;
+        gap: 6px;
+    }
+}
+
 @media (max-width: 768px) {
     .table-redes {
         font-size: 12px;

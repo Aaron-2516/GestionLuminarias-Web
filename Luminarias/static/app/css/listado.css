@@ -214,7 +214,7 @@
     position: sticky;
     top: 0;
     color: #1d4ed8;
-    font-weight: 700;
+    font-weight: 500;
 }
 
 .table-tecnicos .acciones {
@@ -553,6 +553,72 @@
 }
 
 /* =========================
+   CHECKBOX ZONAS SIMPLE
+========================= */
+
+.lista-zonas {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 200px;
+    overflow-y: auto;
+    padding: 10px;
+    margin-bottom: 16px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: #ffffff;
+}
+
+.checkbox-zona {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 8px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.checkbox-zona:hover {
+    background: #f1f5f9;
+}
+
+.checkbox-zona input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+
+.zona-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.zona-info strong {
+    font-size: 5px;
+    color: #334155;
+}
+
+.zona-info small {
+    font-size: 5px;
+    color: #64748b;
+}
+
+/* Scroll */
+
+.lista-zonas::-webkit-scrollbar {
+    width: 8px;
+}
+
+.lista-zonas::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 10px;
+}
+
+.lista-zonas::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* =========================
    ALERTAS
 ========================= */
 
@@ -597,6 +663,13 @@
     border-left-color: #f59e0b;
 }
 
+.label-opcional {
+    font-size: 0.6rem;
+    color: #6c757d;
+    margin-left: 5px;
+    font-weight: normal;
+}
+
 @keyframes aparecer {
     from {
         opacity: 0;
@@ -606,87 +679,5 @@
     to {
         opacity: 1;
         transform: translateY(0);
-    }
-}
-
-/* =========================
-   RESPONSIVE
-========================= */
-
-@media (max-width: 768px) {
-    .table-tecnicos {
-        font-size: 12px;
-        min-width: 650px;
-    }
-
-    .table-tecnicos th,
-    .table-tecnicos td {
-        padding: 9px 10px;
-    }
-
-    .table-tecnicos td button {
-        font-size: 11px;
-        padding: 5px 8px;
-    }
-
-    .header {
-        align-items: flex-start;
-        flex-direction: column;
-    }
-
-    .header h2 {
-        font-size: 20px;
-    }
-
-    .filters {
-        flex-direction: column;
-        align-items: stretch;
-    }
-
-    .filters form {
-        flex-direction: column;
-    }
-
-    .filters input,
-    .filters select,
-    .filters button {
-        width: 100%;
-    }
-
-    .detalle-header-abajo {
-        flex-direction: column;
-        align-items: stretch;
-    }
-
-    .btn-cerrar-detalle {
-        width: 100%;
-    }
-}
-
-@media (max-width: 500px) {
-    .modal-caja {
-        max-width: 100%;
-        padding: 20px;
-    }
-
-    .cards {
-        grid-template-columns: 1fr;
-    }
-}
-
-@media (max-width: 768px) {
-    .detalle-tecnico-hero {
-        align-items: flex-start;
-        flex-direction: column;
-    }
-
-    .form-cerrar-detalle,
-    .btn-cerrar-detalle {
-        width: 100%;
-    }
-
-    .detalle-fila {
-        grid-template-columns: 1fr;
-        gap: 6px;
     }
 }

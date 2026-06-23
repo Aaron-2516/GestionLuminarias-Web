@@ -10,9 +10,9 @@
 {% block topbar_title %}Panel de {{ request.session.usuario_nombre|default:"Técnico" }}{% endblock %}
 
 {% block topbar_actions %}
-    <a href="{% url 'agregar_luminarias' %}" class="action-btn primary">Nueva Luminaria</a>
+    <a href="{% url 'agregar_redes' %}" class="action-btn primary">Nueva Red</a>
     <a href="{% url 'agregar_zonas' %}" class="action-btn secondary">Nueva Zona</a>
-    <a href="{% url 'agregar_redes' %}" class="action-btn secondary">Nueva Red</a>
+    <a href="{% url 'agregar_luminarias' %}" class="action-btn secondary">Nueva Luminaria</a>
 {% endblock %}
 
 {% block content %}

@@ -4,7 +4,7 @@
 {% block title %}Agregar Redes{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'app/css/agregar_redes.css' %}?v=100">
+<link rel="stylesheet" href="{% static 'app/css/agregar_redes.css' %}?v=101">
 {% endblock %}
 
 {% block content %}
@@ -58,7 +58,7 @@
     </form>
 
     <select name="zona" id="zona-select" form="form-busqueda" onchange="this.form.submit()">
-        <option value="">-- Seleccione una zona --</option>
+        <option value="">- Seleccione una zona -</option>
         {% for zona in zonas %}
         <option value="{{ zona.id_zona }}"{% if selected_zona == zona.id_zona %} selected{% endif %}>
             {{ zona.nombre_zona }}
@@ -69,7 +69,7 @@
     </select>
 
     <select name="estado" id="estado-select" form="form-busqueda" onchange="this.form.submit()">
-        <option value="">-- Seleccione un estado --</option>
+        <option value="">- Seleccione un estado -</option>
         <option value="activo"{% if selected_estado == "activo" %} selected{% endif %}>Activo</option>
         <option value="inactivo"{% if selected_estado == "inactivo" %} selected{% endif %}>Inactivo</option>
     </select>
@@ -89,7 +89,8 @@
                 <th>Nombre</th>
                 <th>Voltaje</th>
                 <th>Consumo esperado</th>
-                <th>Zona</th>
+                <th>Consumo registrado</th>
+                <!--<th>Zona</th>-->
                 <th>Estado</th>
                 <th>Acciones</th>
             </tr>
@@ -101,14 +102,20 @@
                 <td>{{ red.id_red }}</td>
                 <td>{{ red.nombre_red }}</td>
                 <td>{{ red.voltaje }}</td>
-                <td>{{ red.consumo_esperado }}</td>
-
+                <td>{{ red.consumo_esperado }} kWh</td>
                 <td>
+                    {% if red.ultima_lectura %}
+                    {{ red.consumo_registrado }} kWh
+                    {% else %}
+                    Sin lectura
+                    {% endif %}
+                </td>
+                <!--<td>
                     {% for zona in red.zonas %}
                         {{ zona.nombre_zona }}{% if not forloop.last %}, {% endif %}
                     {% empty %}
                         Sin zona
-                    {% endfor %}
+                    {% endfor %}-->
                 </td>
 
                 <td>
@@ -140,6 +147,11 @@
                     >
                     Editar
                 </button>
+                <!-- <form method="POST" class="form-eliminar">
+                        {% csrf_token %}
+                        <input type="hidden" name="eliminar_id" value="{{ red.id_red }}">
+                        <button type="submit" class="btn-eliminar">Eliminar</button>
+                    </form> -->
                 </td>
             </tr>
             {% empty %}
@@ -197,8 +209,17 @@
         </div>
 
         <div class="detalle-fila">
-            <span>Consumo Esperado</span>
-            <strong>{{ red_detalle.consumo_esperado }}</strong>
+            <span>Consumo esperado</span>
+            <strong>{{ red_detalle.consumo_esperado }} kWh</strong>
+        </div>
+        <div class="detalle-fila">
+            <span>Consumo registrado</span>
+            <strong>{% if red_detalle.ultima_lectura %}
+                    {{ red_detalle.consumo_registrado }} kWh
+                    {% else %}
+                    Sin lectura
+                    {% endif %}
+                </strong>
         </div>
 
         <div class="detalle-fila">
@@ -235,15 +256,6 @@
                 <option value="110">110V</option>
                 <option value="220">220V</option>
             </select>
-
-            <label for="zona">Zona: <span class="required"> *</span></label>
-            <select id="zona" name="zona" required>
-                <option value="">-- Seleccione una zona --</option>
-                {% for zona in zonas_disponibles %}
-                    <option value="{{ zona.id_zona }}">{{ zona.nombre_zona }}</option>
-                {% endfor %}
-            </select>
-
             <button type="submit" class="btn-guardar">Guardar Red</button>
         </form>
     </div>
