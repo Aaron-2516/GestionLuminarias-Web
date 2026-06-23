@@ -99,7 +99,7 @@ def _redondear_float(valor):
     return float(_redondear_decimal(valor))
 
 
-def _calcular_consumo_esperado_red(red):     #CREADO
+def _calcular_consumo_esperado_red(red):
     if not red:
         return Decimal("0.00")
 
@@ -116,7 +116,7 @@ def _calcular_consumo_esperado_red(red):     #CREADO
     return _redondear_decimal(consumo_mensual)
 
 
-def _actualizar_consumo_esperado_red(red):    #CREADO
+def _actualizar_consumo_esperado_red(red):
     if not red:
         return Decimal("0.00")
 
